@@ -28,7 +28,8 @@ OCT<-filter(DisruptCoded,!whichRT)
 NperOCT<-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broadening.the.counterpublic), sum(OCT$Creating.change.in.math), sum(OCT$SJEDI))
 #FreqperOCT <- NperOCT/nrow_dc
 #I think that was the wrong denominator
-FreqperOCT <- NperOCT/(dim(OCT)[1])
+nrow_OCT=dim(OCT)[1]
+FreqperOCT <- NperOCT/nrowOCT
 ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
 
 #Tweet subsets of each code
@@ -40,3 +41,9 @@ SJtweets<-filter(DisruptCoded,SJEDI == 1)
 
 #TimeSeries of Tweets by hours
 #DisruptCoded<-cbind(DisruptCoded, time <- as.POSIXct(strptime(DisruptCoded$created_at, "%a, %d %b %Y %H:%M:%S %z", tz = "GMT")))
+
+
+#How many tweets got the indigenous tag?
+#Filter out  tweets by ones that have "indigenous" in the SJEDI.code column
+indigenousTweets=filter(OCT,grepl("indigenous",SJEDI.code))
+View(indigenousTweets)
