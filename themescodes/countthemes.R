@@ -8,7 +8,8 @@ library(rtweet)
 library(ggplot2)
 
 #Fake test data set to set up analysis
-DisruptCoded<-read.csv("themescodes/fakedisruptdata.csv")
+#DisruptCoded<-read.csv("themescodes/fakedisruptdata.csv")
+DisruptCoded<-read.csv("./Final Coding.csv")
 View(DisruptCoded)
 size_dc<-dim(DisruptCoded)
 nrow_dc<-size_dc[1]
@@ -25,7 +26,9 @@ row.names(ThemeSummary)<-Themes
 whichRT<-str_detect(DisruptCoded$text, "^RT ")
 OCT<-filter(DisruptCoded,!whichRT)
 NperOCT<-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broadening.the.counterpublic), sum(OCT$Creating.change.in.math), sum(OCT$SJEDI))
-FreqperOCT <- NperOCT/nrow_dc
+#FreqperOCT <- NperOCT/nrow_dc
+#I think that was the wrong denominator
+FreqperOCT <- NperOCT/(dim(OCT)[1])
 ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
 
 #Tweet subsets of each code
