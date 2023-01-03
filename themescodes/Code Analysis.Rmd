@@ -86,6 +86,6 @@ SJEDItagCount['Bucket']="SJEDI"
 TagCounts <- rbind(SOtagCount, BCtagCount, BtCtagCount, CCMtagCount, SJEDItagCount)
 TagCounts <- cbind(TagCounts, TagCounts$Number/nrow(OCT))
 colnames(TagCounts)[3] <- "Frequency"
-kable(TagCounts[c(2,1,3)], digits=c(0,2))
+kable(TagCounts[c(2,1,3)], digits=c(0,0,2))
 ```
 
