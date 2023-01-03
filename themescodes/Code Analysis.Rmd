@@ -61,7 +61,7 @@ Let's compute the frequency of the tags
 SOtags <- c("amplification", "activation", "strategic planning", "SO impact", "troll")
 SOtagCount <- data.frame(sapply(SOtags, function(tag) return(nrow(filter(OCT,grepl(tag,SO.code))))))
 colnames(SOtagCount)[1] <- "Number"
-SOtagCount['Bucket']="Strategic Organizing"
+SOtagCount['Bucket']="Self Organization"
 
 BCtags <- c("thankful", "talk support", "belonging", "emotional support", "expertise support", "conversation", "celebration", "BC impact")
 BCtagCount <- data.frame(sapply(BCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BC.code))))))

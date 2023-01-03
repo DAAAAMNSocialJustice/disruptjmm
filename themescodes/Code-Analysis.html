@@ -538,7 +538,7 @@ SJtweets&lt;-filter(DisruptCoded,SJEDI == 1)
 <pre class="r"><code>SOtags &lt;- c(&quot;amplification&quot;, &quot;activation&quot;, &quot;strategic planning&quot;, &quot;SO impact&quot;, &quot;troll&quot;)
 SOtagCount &lt;- data.frame(sapply(SOtags, function(tag) return(nrow(filter(OCT,grepl(tag,SO.code))))))
 colnames(SOtagCount)[1] &lt;- &quot;Number&quot;
-SOtagCount[&#39;Bucket&#39;]=&quot;Strategic Organizing&quot;
+SOtagCount[&#39;Bucket&#39;]=&quot;Self Organization&quot;
 
 BCtags &lt;- c(&quot;thankful&quot;, &quot;talk support&quot;, &quot;belonging&quot;, &quot;emotional support&quot;, &quot;expertise support&quot;, &quot;conversation&quot;, &quot;celebration&quot;, &quot;BC impact&quot;)
 BCtagCount &lt;- data.frame(sapply(BCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BC.code))))))
@@ -582,7 +582,7 @@ kable(TagCounts[order(TagCounts$Number,decreasing=TRUE),c(2,1,3)], digits=c(0,0,
 <tbody>
 <tr class="odd">
 <td align="left">amplification</td>
-<td align="left">Strategic Organizing</td>
+<td align="left">Self Organization</td>
 <td align="right">128</td>
 <td align="right">0.43</td>
 </tr>
@@ -636,7 +636,7 @@ kable(TagCounts[order(TagCounts$Number,decreasing=TRUE),c(2,1,3)], digits=c(0,0,
 </tr>
 <tr class="even">
 <td align="left">strategic planning</td>
-<td align="left">Strategic Organizing</td>
+<td align="left">Self Organization</td>
 <td align="right">30</td>
 <td align="right">0.10</td>
 </tr>
@@ -696,7 +696,7 @@ kable(TagCounts[order(TagCounts$Number,decreasing=TRUE),c(2,1,3)], digits=c(0,0,
 </tr>
 <tr class="even">
 <td align="left">SO impact</td>
-<td align="left">Strategic Organizing</td>
+<td align="left">Self Organization</td>
 <td align="right">11</td>
 <td align="right">0.04</td>
 </tr>
@@ -738,7 +738,7 @@ kable(TagCounts[order(TagCounts$Number,decreasing=TRUE),c(2,1,3)], digits=c(0,0,
 </tr>
 <tr class="odd">
 <td align="left">activation</td>
-<td align="left">Strategic Organizing</td>
+<td align="left">Self Organization</td>
 <td align="right">4</td>
 <td align="right">0.01</td>
 </tr>
@@ -756,7 +756,7 @@ kable(TagCounts[order(TagCounts$Number,decreasing=TRUE),c(2,1,3)], digits=c(0,0,
 </tr>
 <tr class="even">
 <td align="left">troll</td>
-<td align="left">Strategic Organizing</td>
+<td align="left">Self Organization</td>
 <td align="right">2</td>
 <td align="right">0.01</td>
 </tr>
