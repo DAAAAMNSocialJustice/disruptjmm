@@ -38,7 +38,7 @@ ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
 
 How many tweets were in each bucket?
 ```{r, echo=FALSE}
-kable(ThemeSummary, col.names=c("Number of tweets", "Frequency of tweets", "Number of original tweets", "Frequency of original tweets"),digits=c(3,0,3,0))
+kable(ThemeSummary, col.names=c("Number of tweets", "Frequency of tweets", "Number of original tweets", "Frequency of original tweets"),digits=c(0,2,0,2,0))
 ```
 
 ```{r, echo=FALSE}
