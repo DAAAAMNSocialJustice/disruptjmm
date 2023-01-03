@@ -1,0 +1,372 @@
+---
+title: "codebreaks"
+author: "Carrie Diaz Eaton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(splitstackshape) 
+library(reshape2)
+library(ggplot2)
+library(forcats)
+```
+
+## Just with SJEDI codes for now
+# run the Code Analysis Rmd first to get the variables in the environment
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+SJEDI.codes<-cSplit(SJtweets, 'SJEDI.code', sep=";", direction = "wide", type.convert = FALSE)
+View(SJEDI.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(SJEDI.codes)[grepl("SJEDI.code",colnames(SJEDI.codes))]
+just.codes<-select(SJEDI.codes,code.columns)
+just.codes<-cbind(X = SJEDI.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "SJEDI.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+SJEDI.counts <- long.codes %>% count(SJEDI.code)
+print(SJEDI.counts)
+```
+
+## Fix data mistypes
+```{r}
+long.codes[long.codes == "indigneous"] <- "indigenous"
+long.codes[long.codes == "lgbtq"] <- "lgbtq+"
+long.codes[long.codes == "lgtbq+"] <- "lgbtq+"
+long.codes[long.codes == "represenation"] <- "representation"
+long.codes[long.codes == "SJEDI Impact"] <- "SJEDI impact"
+
+#then look again to make sure
+SJEDI.counts <- long.codes %>% count(SJEDI.code)
+print(SJEDI.counts)
+```
+
+
+## Visualize
+```{r}
+# Barplot
+ggplot(SJEDI.counts, aes(x=SJEDI.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('SJEDIplot.jpg')
+
+# Reorder following the value of another column:
+SJEDIplot<- SJEDI.counts %>%
+  mutate(name = fct_reorder(SJEDI.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+SJEDIplot
+```
+
+
+
+## Building Community
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+BC.codes<-cSplit(BCtweets, 'BC.code', sep=";", direction = "wide", type.convert = FALSE)
+View(BC.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(BC.codes)[grepl("BC.code",colnames(BC.codes))]
+just.codes<-select(BC.codes,code.columns)
+just.codes<-cbind(X = BC.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "BC.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+## Fix data mistypes
+```{r}
+long.codes[long.codes == "emotional suport"] <- "emotional support"
+long.codes[long.codes == "talk suport"] <- "talk support"
+long.codes[long.codes == "BC Impact"] <- "BC impact"
+
+#then look again to make sure
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+
+## Visualize
+```{r}
+# Make
+# Barplot
+ggplot(BC.counts, aes(x=BC.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('BCplot.jpg')
+
+# Reorder following the value of another column:
+BCplot<- BC.counts %>%
+  mutate(name = fct_reorder(BC.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BCplot
+```
+
+
+
+## Broadening the Conversation
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+BtC.codes<-cSplit(BtCtweets, 'BtC.code', sep=";", direction = "wide", type.convert = FALSE)
+View(BtC.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(BtC.codes)[grepl("BtC.code",colnames(BtC.codes))]
+just.codes<-select(BtC.codes,code.columns)
+just.codes<-cbind(X = BtC.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "BtC.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+BtC.counts <- long.codes %>% count(BtC.code)
+print(BtC.counts)
+```
+
+## Fix data mistypes
+```{r}
+long.codes[long.codes == "emotional suport"] <- "emotional support"
+long.codes[long.codes == "talk suport"] <- "talk support"
+long.codes[long.codes == "BC Impact"] <- "BC impact"
+
+#then look again to make sure
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+
+## Visualize
+```{r}
+# Make
+# Barplot
+ggplot(BC.counts, aes(x=BC.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('BCplot.jpg')
+
+# Reorder following the value of another column:
+BCplot<- BC.counts %>%
+  mutate(name = fct_reorder(BC.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BCplot
+```
+
+
+
+## Creating Change
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+BC.codes<-cSplit(BCtweets, 'BC.code', sep=";", direction = "wide", type.convert = FALSE)
+View(BC.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(BC.codes)[grepl("BC.code",colnames(BC.codes))]
+just.codes<-select(BC.codes,code.columns)
+just.codes<-cbind(X = BC.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "BC.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+## Fix data mistypes
+```{r}
+long.codes[long.codes == "emotional suport"] <- "emotional support"
+long.codes[long.codes == "talk suport"] <- "talk support"
+long.codes[long.codes == "BC Impact"] <- "BC impact"
+
+#then look again to make sure
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+
+## Visualize
+```{r}
+# Make
+# Barplot
+ggplot(BC.counts, aes(x=BC.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('BCplot.jpg')
+
+# Reorder following the value of another column:
+BCplot<- BC.counts %>%
+  mutate(name = fct_reorder(BC.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BCplot
+```
+
+
+
+## Self-Organization
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+BC.codes<-cSplit(BCtweets, 'BC.code', sep=";", direction = "wide", type.convert = FALSE)
+View(BC.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(BC.codes)[grepl("BC.code",colnames(BC.codes))]
+just.codes<-select(BC.codes,code.columns)
+just.codes<-cbind(X = BC.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "BC.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+## Fix data mistypes
+```{r}
+long.codes[long.codes == "emotional suport"] <- "emotional support"
+long.codes[long.codes == "talk suport"] <- "talk support"
+long.codes[long.codes == "BC Impact"] <- "BC impact"
+
+#then look again to make sure
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+
+## Visualize
+```{r}
+# Make
+# Barplot
+ggplot(BC.counts, aes(x=BC.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('BCplot.jpg')
+
+# Reorder following the value of another column:
+BCplot<- BC.counts %>%
+  mutate(name = fct_reorder(BC.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BCplot
+```
+
+
+
+
+
