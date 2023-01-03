@@ -1,23 +1,29 @@
-#This code will count the frequency of themes
-# Carrie Diaz Eaton 12/21/22
+---
+title: "Data Analysis"
+output: html_document
+date: "2023-01-02"
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, message=FALSE}
 # packages
 library(tidyverse) 
 library(tidytext) 
 library(rtweet)
 library(ggplot2)
+library(knitr)
 
-#Fake test data set to set up analysis
-#DisruptCoded<-read.csv("themescodes/fakedisruptdata.csv")
+#Read in file
 DisruptCoded<-read.csv("./Final Coding.csv")
-View(DisruptCoded)
-size_dc<-dim(DisruptCoded)
-nrow_dc<-size_dc[1]
+
 
 #set up a summary dataframe and store theme counts and frequencies
 Themes<-c("Self.organization", "Building.community","Broadening.the.counterpublic", "Creating.change.in.math", "SJEDI")
 Nper<-c(sum(DisruptCoded$Self.organization), sum(DisruptCoded$Building.community), sum(DisruptCoded$Broadening.the.counterpublic), sum(DisruptCoded$Creating.change.in.math), sum(DisruptCoded$SJEDI))
-Freqper <- Nper/nrow_dc
+Freqper <- Nper/nrow(DisruptCoded)
 ThemeSummary<-data.frame(Nper, Freqper)
 row.names(ThemeSummary)<-Themes
 
@@ -26,12 +32,16 @@ row.names(ThemeSummary)<-Themes
 whichRT<-str_detect(DisruptCoded$text, "^RT ")
 OCT<-filter(DisruptCoded,!whichRT)
 NperOCT<-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broadening.the.counterpublic), sum(OCT$Creating.change.in.math), sum(OCT$SJEDI))
-#FreqperOCT <- NperOCT/nrow_dc
-#I think that was the wrong denominator
-nrow_OCT=dim(OCT)[1]
-FreqperOCT <- NperOCT/nrowOCT
+FreqperOCT <- NperOCT/nrow(OCT)
 ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
+```
 
+How many tweets were in each bucket?
+```{r, echo=FALSE}
+kable(ThemeSummary, col.names=c("Number of tweets", "Frequency of tweets", "Number of original tweets", "Frequency of original tweets"),digits=c(3,0,3,0))
+```
+
+```{r, echo=FALSE}
 #Tweet subsets of each code
 SOtweets<-filter(DisruptCoded,Self.organization == 1)
 BCtweets<-filter(DisruptCoded,Building.community == 1)
@@ -42,15 +52,23 @@ SJtweets<-filter(DisruptCoded,SJEDI == 1)
 #TimeSeries of Tweets by hours
 #DisruptCoded<-cbind(DisruptCoded, time <- as.POSIXct(strptime(DisruptCoded$created_at, "%a, %d %b %Y %H:%M:%S %z", tz = "GMT")))
 
+```
 
-#How many tweets got the indigenous tag?
+How many tweets were tagged indigenous?
+```{r, echo=FALSE}
 #Filter out  tweets by ones that have "indigenous" in the SJEDI.code column
 indigenousTweets=filter(OCT,grepl("indigenous",SJEDI.code))
-View(indigenousTweets)
+nrow(indigenousTweets)
+```
 
+How many were tagged Talk support?
+```{r, echo=FALSE}
 talkSupportTweets=filter(OCT,grepl("talk support",BC.code))
 nrow(talkSupportTweets)
+```
 
+What about Strategic Planning?
+```{r, echo=FALSE}
 #One liner
 nrow(filter(OCT,grepl("strategic planning",SO.code)))
-
+```
