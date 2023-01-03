@@ -21,8 +21,7 @@ library(ggplot2)
 library(forcats)
 ```
 
-## Just with SJEDI codes for now
-# run the Code Analysis Rmd first to get the variables in the environment
+
 ```{r} 
 #Copied from Code-Analysis.Rmd
 #Read in file
@@ -80,18 +79,6 @@ SJEDI.counts <- long.codes %>% count(SJEDI.code)
 print(SJEDI.counts)
 ```
 
-## Fix data mistypes
-```{r}
-long.codes[long.codes == "indigneous"] <- "indigenous"
-long.codes[long.codes == "lgbtq"] <- "lgbtq+"
-long.codes[long.codes == "lgtbq+"] <- "lgbtq+"
-long.codes[long.codes == "represenation"] <- "representation"
-long.codes[long.codes == "SJEDI Impact"] <- "SJEDI impact"
-
-#then look again to make sure
-SJEDI.counts <- long.codes %>% count(SJEDI.code)
-print(SJEDI.counts)
-```
 
 
 ## Visualize
@@ -151,16 +138,6 @@ BC.counts <- long.codes %>% count(BC.code)
 print(BC.counts)
 ```
 
-## Fix data mistypes
-```{r}
-long.codes[long.codes == "emotional suport"] <- "emotional support"
-long.codes[long.codes == "talk suport"] <- "talk support"
-long.codes[long.codes == "BC Impact"] <- "BC impact"
-
-#then look again to make sure
-BC.counts <- long.codes %>% count(BC.code)
-print(BC.counts)
-```
 
 
 ## Visualize
@@ -217,16 +194,6 @@ long.codes<-melt(just.codes, id = "X", value.name = "BtC.code", na.rm = TRUE)
 
 ## Summarize data
 ```{r}
-BtC.counts <- long.codes %>% count(BtC.code)
-print(BtC.counts)
-```
-
-## Fix data mistypes
-```{r}
-long.codes[long.codes == "influencer"] <- "influencers"
-long.codes[long.codes == "hashtag"] <- "hashtags"
-
-#then look again to make sure
 BtC.counts <- long.codes %>% count(BtC.code)
 print(BtC.counts)
 ```
@@ -288,19 +255,6 @@ CCM.counts <- long.codes %>% count(CCM.code)
 print(CCM.counts)
 ```
 
-## Fix data mistypes
-```{r}
-long.codes[long.codes == "humamize"] <- "humanize"
-long.codes[long.codes == "jmm experiences"] <- "jmm experience"
-long.codes[long.codes == "math experiences"] <- "math experience"
-long.codes[long.codes == "math practice"] <- "math practices"
-
-#then look again to make sure
-CCM.counts <- long.codes %>% count(CCM.code)
-print(CCM.counts)
-```
-
-
 ## Visualize
 ```{r}
 ## Ordered version of barplot
@@ -350,19 +304,6 @@ long.codes<-melt(just.codes, id = "X", value.name = "SO.code", na.rm = TRUE)
 SO.counts <- long.codes %>% count(SO.code)
 print(SO.counts)
 ```
-
-## Fix data mistypes
-```{r}
-long.codes[long.codes == "so impact"] <- "SO impact"
-long.codes[long.codes == "SO Impact"] <- "talk support"
-long.codes[long.codes == "strategic plannin"] <- "strategic planning"
-long.codes[long.codes == "strategic pplanning"] <- "strategic planning"
-
-#then look again to make sure
-SO.counts <- long.codes %>% count(SO.code)
-print(SO.counts)
-```
-
 
 ## Visualize
 ```{r}

@@ -37,12 +37,6 @@ NperOCT<-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broa
 FreqperOCT <- NperOCT/nrow(OCT)
 ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
 ```
-
-How many tweets were in each bucket?
-```{r}
-kable(ThemeSummary, col.names=c("Number of tweets", "Frequency of tweets", "Number of original tweets", "Frequency of original tweets"),digits=c(0,2,0,2,0))
-```
-
 ```{r}
 #Tweet subsets of each code
 SOtweets<-filter(DisruptCoded,Self.organization == 1)
@@ -53,8 +47,14 @@ SJtweets<-filter(DisruptCoded,SJEDI == 1)
 
 #TimeSeries of Tweets by hours
 #DisruptCoded<-cbind(DisruptCoded, time <- as.POSIXct(strptime(DisruptCoded$created_at, "%a, %d %b %Y %H:%M:%S %z", tz = "GMT")))
-
 ```
+
+How many tweets were in each bucket?
+```{r}
+kable(ThemeSummary, col.names=c("Number of tweets", "Frequency of tweets", "Number of original tweets", "Frequency of original tweets"),digits=c(0,2,0,2,0))
+```
+
+
 
 Let's compute the frequency of the tags
 ```{r}
