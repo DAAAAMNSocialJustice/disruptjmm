@@ -1,6 +1,8 @@
 ---
 title: "Data Analysis"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 date: "2023-01-02"
 ---
 
@@ -8,7 +10,7 @@ date: "2023-01-02"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, echo=FALSE, message=FALSE}
+```{r, message=FALSE}
 # packages
 library(tidyverse) 
 library(tidytext) 
@@ -21,7 +23,7 @@ DisruptCoded<-read.csv("./Final Coding.csv")
 
 
 #set up a summary dataframe and store theme counts and frequencies
-Themes<-c("Self.organization", "Building.community","Broadening.the.counterpublic", "Creating.change.in.math", "SJEDI")
+Themes<-c("Self organization", "Building community","Broadening the counterpublic", "Creating change in math", "SJEDI")
 Nper<-c(sum(DisruptCoded$Self.organization), sum(DisruptCoded$Building.community), sum(DisruptCoded$Broadening.the.counterpublic), sum(DisruptCoded$Creating.change.in.math), sum(DisruptCoded$SJEDI))
 Freqper <- Nper/nrow(DisruptCoded)
 ThemeSummary<-data.frame(Nper, Freqper)
@@ -37,11 +39,11 @@ ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
 ```
 
 How many tweets were in each bucket?
-```{r, echo=FALSE}
+```{r}
 kable(ThemeSummary, col.names=c("Number of tweets", "Frequency of tweets", "Number of original tweets", "Frequency of original tweets"),digits=c(0,2,0,2,0))
 ```
 
-```{r, echo=FALSE}
+```{r}
 #Tweet subsets of each code
 SOtweets<-filter(DisruptCoded,Self.organization == 1)
 BCtweets<-filter(DisruptCoded,Building.community == 1)
@@ -54,21 +56,42 @@ SJtweets<-filter(DisruptCoded,SJEDI == 1)
 
 ```
 
-How many tweets were tagged indigenous?
-```{r, echo=FALSE}
-#Filter out  tweets by ones that have "indigenous" in the SJEDI.code column
-indigenousTweets=filter(OCT,grepl("indigenous",SJEDI.code))
-nrow(indigenousTweets)
+Let's compute the frequency of the tags
+```{r}
+SOtags <- c("amplification", "activation", "strategic planning", "SO impact", "troll")
+SOtagCount <- data.frame(sapply(SOtags, function(tag) return(nrow(filter(OCT,grepl(tag,SO.code))))))
+colnames(SOtagCount)[1] <- "Number"
+
+BCtags <- c("thankful", "talk support", "belonging", "emotional support", "expertise support", "conversation", "celebration", "BC impact")
+BCtagCount <- data.frame(sapply(BCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BC.code))))))
+colnames(BCtagCount)[1] <- "Number"
+
+BtCtags <- c("disrupteverything", "influencers", "beyond", "hashtags", "virtual participation")
+BtCtagCount <- data.frame(sapply(BtCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BtC.code))))))
+colnames(BtCtagCount)[1] <- "Number"
+
+CCMtags <- c("humanize", "jmm experience", "math experience", "futures", "math practice", "current events", "allyship in math", "CC impact")
+CCMtagCount <- data.frame(sapply(CCMtags, function(tag) return(nrow(filter(OCT,grepl(tag,CCM.code))))))
+colnames(CCMtagCount)[1] <- "Number"
+
+SJEDItags<-c("representation", "lgbtq", "bipoc", "gender", "indigenous", "power", "advocacy", "learning", "economic", "SJEDI impact")
+SJEDItagCount <- data.frame(sapply(SJEDItags, function(tag) return(nrow(filter(OCT,grepl(tag,SJEDI.code))))))
+colnames(SJEDItagCount)[1] <- "Number"
+
+TagCounts <- rbind(SOtagCount, BCtagCount, BtCtagCount, CCMtagCount, SJEDItagCount)
+TagCounts <- cbind(TagCounts, TagCounts$Number/nrow(OCT))
+colnames(TagCounts)[2] <- "Frequency"
+kable(TagCounts, digits=c(0,2))
 ```
 
 How many were tagged Talk support?
-```{r, echo=FALSE}
+```{r}
 talkSupportTweets=filter(OCT,grepl("talk support",BC.code))
 nrow(talkSupportTweets)
 ```
 
 What about Strategic Planning?
-```{r, echo=FALSE}
+```{r}
 #One liner
 nrow(filter(OCT,grepl("strategic planning",SO.code)))
 ```

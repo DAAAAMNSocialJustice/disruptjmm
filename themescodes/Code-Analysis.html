@@ -208,6 +208,83 @@ window.buildTabsets = function(tocID) {
 };
 
 </script>
+<script>
+window.initializeCodeFolding = function(show) {
+
+  // handlers for show-all and hide all
+  $("#rmd-show-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('show');
+    });
+  });
+  $("#rmd-hide-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('hide');
+    });
+  });
+
+  // index for unique code element ids
+  var currentIndex = 1;
+
+  // select all R code blocks
+  var rCodeBlocks = $('pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan, pre.julia, pre.foldable');
+  rCodeBlocks.each(function() {
+    // skip if the block has fold-none class
+    if ($(this).hasClass('fold-none')) return;
+
+    // create a collapsable div to wrap the code in
+    var div = $('<div class="collapse r-code-collapse"></div>');
+    var showThis = (show || $(this).hasClass('fold-show')) && !$(this).hasClass('fold-hide');
+    var id = 'rcode-643E0F36' + currentIndex++;
+    div.attr('id', id);
+    $(this).before(div);
+    $(this).detach().appendTo(div);
+
+    // add a show code button right above
+    var showCodeText = $('<span>' + (showThis ? 'Hide' : 'Code') + '</span>');
+    var showCodeButton = $('<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm code-folding-btn pull-right float-right"></button>');
+    showCodeButton.append(showCodeText);
+    showCodeButton
+        .attr('data-toggle', 'collapse')
+        .attr('data-bs-toggle', 'collapse') // BS5
+        .attr('data-target', '#' + id)
+        .attr('data-bs-target', '#' + id)   // BS5
+        .attr('aria-expanded', showThis)
+        .attr('aria-controls', id);
+
+    var buttonRow = $('<div class="row"></div>');
+    var buttonCol = $('<div class="col-md-12"></div>');
+
+    buttonCol.append(showCodeButton);
+    buttonRow.append(buttonCol);
+
+    div.before(buttonRow);
+
+    // show the div if necessary
+    if (showThis) div.collapse('show');
+
+    // update state of button on show/hide
+    //   * Change text
+    //   * add a class for intermediate states styling
+    div.on('hide.bs.collapse', function () {
+      showCodeText.text('Code');
+      showCodeButton.addClass('btn-collapsing');
+    });
+    div.on('hidden.bs.collapse', function () {
+      showCodeButton.removeClass('btn-collapsing');
+    });
+    div.on('show.bs.collapse', function () {
+      showCodeText.text('Hide');
+      showCodeButton.addClass('btn-expanding');
+    });
+    div.on('shown.bs.collapse', function () {
+      showCodeButton.removeClass('btn-expanding');
+    });
+
+  });
+
+}
+</script>
 <style type="text/css">.hljs-literal {
 color: #990073;
 }
@@ -331,6 +408,9 @@ display: none;
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
 
 
@@ -347,6 +427,14 @@ display: none;
 
 <div id="header">
 
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
 
 
 <h1 class="title toc-ignore">Data Analysis</h1>
@@ -355,7 +443,33 @@ display: none;
 </div>
 
 
+<pre class="r"><code># packages
+library(tidyverse) 
+library(tidytext) 
+library(rtweet)
+library(ggplot2)
+library(knitr)
+
+#Read in file
+DisruptCoded&lt;-read.csv(&quot;./Final Coding.csv&quot;)
+
+
+#set up a summary dataframe and store theme counts and frequencies
+Themes&lt;-c(&quot;Self organization&quot;, &quot;Building community&quot;,&quot;Broadening the counterpublic&quot;, &quot;Creating change in math&quot;, &quot;SJEDI&quot;)
+Nper&lt;-c(sum(DisruptCoded$Self.organization), sum(DisruptCoded$Building.community), sum(DisruptCoded$Broadening.the.counterpublic), sum(DisruptCoded$Creating.change.in.math), sum(DisruptCoded$SJEDI))
+Freqper &lt;- Nper/nrow(DisruptCoded)
+ThemeSummary&lt;-data.frame(Nper, Freqper)
+row.names(ThemeSummary)&lt;-Themes
+
+#Examine only the non-RT
+#original content tweets (OCT) are original tweets (OT), replies, and quote tweets (QT) 
+whichRT&lt;-str_detect(DisruptCoded$text, &quot;^RT &quot;)
+OCT&lt;-filter(DisruptCoded,!whichRT)
+NperOCT&lt;-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broadening.the.counterpublic), sum(OCT$Creating.change.in.math), sum(OCT$SJEDI))
+FreqperOCT &lt;- NperOCT/nrow(OCT)
+ThemeSummary &lt;- cbind(ThemeSummary, NperOCT, FreqperOCT)</code></pre>
 <p>How many tweets were in each bucket?</p>
+<pre class="r"><code>kable(ThemeSummary, col.names=c(&quot;Number of tweets&quot;, &quot;Frequency of tweets&quot;, &quot;Number of original tweets&quot;, &quot;Frequency of original tweets&quot;),digits=c(0,2,0,2,0))</code></pre>
 <table style="width:100%;">
 <colgroup>
 <col width="23%" />
@@ -375,28 +489,28 @@ display: none;
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">Self.organization</td>
+<td align="left">Self organization</td>
 <td align="right">743</td>
 <td align="right">0.66</td>
 <td align="right">173</td>
 <td align="right">0.58</td>
 </tr>
 <tr class="even">
-<td align="left">Building.community</td>
+<td align="left">Building community</td>
 <td align="right">855</td>
 <td align="right">0.76</td>
 <td align="right">226</td>
 <td align="right">0.76</td>
 </tr>
 <tr class="odd">
-<td align="left">Broadening.the.counterpublic</td>
+<td align="left">Broadening the counterpublic</td>
 <td align="right">537</td>
 <td align="right">0.48</td>
 <td align="right">140</td>
 <td align="right">0.47</td>
 </tr>
 <tr class="even">
-<td align="left">Creating.change.in.math</td>
+<td align="left">Creating change in math</td>
 <td align="right">471</td>
 <td align="right">0.42</td>
 <td align="right">90</td>
@@ -411,11 +525,238 @@ display: none;
 </tr>
 </tbody>
 </table>
-<p>How many tweets were tagged indigenous?</p>
-<pre><code>## [1] 25</code></pre>
+<pre class="r"><code>#Tweet subsets of each code
+SOtweets&lt;-filter(DisruptCoded,Self.organization == 1)
+BCtweets&lt;-filter(DisruptCoded,Building.community == 1)
+BtCtweets&lt;-filter(DisruptCoded,Broadening.the.counterpublic == 1)
+CCtweets&lt;-filter(DisruptCoded,Creating.change.in.math == 1)
+SJtweets&lt;-filter(DisruptCoded,SJEDI == 1)
+
+#TimeSeries of Tweets by hours
+#DisruptCoded&lt;-cbind(DisruptCoded, time &lt;- as.POSIXct(strptime(DisruptCoded$created_at, &quot;%a, %d %b %Y %H:%M:%S %z&quot;, tz = &quot;GMT&quot;)))</code></pre>
+<p>Let’s compute the frequency of the tags</p>
+<pre class="r"><code>SOtags &lt;- c(&quot;amplification&quot;, &quot;activation&quot;, &quot;strategic planning&quot;, &quot;SO impact&quot;, &quot;troll&quot;)
+SOtagCount &lt;- data.frame(sapply(SOtags, function(tag) return(nrow(filter(OCT,grepl(tag,SO.code))))))
+colnames(SOtagCount)[1] &lt;- &quot;Number&quot;
+
+BCtags &lt;- c(&quot;thankful&quot;, &quot;talk support&quot;, &quot;belonging&quot;, &quot;emotional support&quot;, &quot;expertise support&quot;, &quot;conversation&quot;, &quot;celebration&quot;, &quot;BC impact&quot;)
+BCtagCount &lt;- data.frame(sapply(BCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BC.code))))))
+colnames(BCtagCount)[1] &lt;- &quot;Number&quot;
+
+BtCtags &lt;- c(&quot;disrupteverything&quot;, &quot;influencers&quot;, &quot;beyond&quot;, &quot;hashtags&quot;, &quot;virtual participation&quot;)
+BtCtagCount &lt;- data.frame(sapply(BtCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BtC.code))))))
+colnames(BtCtagCount)[1] &lt;- &quot;Number&quot;
+
+CCMtags &lt;- c(&quot;humanize&quot;, &quot;jmm experience&quot;, &quot;math experience&quot;, &quot;futures&quot;, &quot;math practice&quot;, &quot;current events&quot;, &quot;allyship in math&quot;, &quot;CC impact&quot;)
+CCMtagCount &lt;- data.frame(sapply(CCMtags, function(tag) return(nrow(filter(OCT,grepl(tag,CCM.code))))))
+colnames(CCMtagCount)[1] &lt;- &quot;Number&quot;
+
+SJEDItags&lt;-c(&quot;representation&quot;, &quot;lgbtq&quot;, &quot;bipoc&quot;, &quot;gender&quot;, &quot;indigenous&quot;, &quot;power&quot;, &quot;advocacy&quot;, &quot;learning&quot;, &quot;economic&quot;, &quot;SJEDI impact&quot;)
+SJEDItagCount &lt;- data.frame(sapply(SJEDItags, function(tag) return(nrow(filter(OCT,grepl(tag,SJEDI.code))))))
+colnames(SJEDItagCount)[1] &lt;- &quot;Number&quot;
+
+TagCounts &lt;- rbind(SOtagCount, BCtagCount, BtCtagCount, CCMtagCount, SJEDItagCount)
+TagCounts &lt;- cbind(TagCounts, TagCounts$Number/nrow(OCT))
+colnames(TagCounts)[2] &lt;- &quot;Frequency&quot;
+kable(TagCounts, digits=c(0,2))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">Number</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">amplification</td>
+<td align="right">128</td>
+<td align="right">0.43</td>
+</tr>
+<tr class="even">
+<td align="left">activation</td>
+<td align="right">4</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">strategic planning</td>
+<td align="right">30</td>
+<td align="right">0.10</td>
+</tr>
+<tr class="even">
+<td align="left">SO impact</td>
+<td align="right">11</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="odd">
+<td align="left">troll</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">thankful</td>
+<td align="right">29</td>
+<td align="right">0.10</td>
+</tr>
+<tr class="odd">
+<td align="left">talk support</td>
+<td align="right">124</td>
+<td align="right">0.41</td>
+</tr>
+<tr class="even">
+<td align="left">belonging</td>
+<td align="right">14</td>
+<td align="right">0.05</td>
+</tr>
+<tr class="odd">
+<td align="left">emotional support</td>
+<td align="right">14</td>
+<td align="right">0.05</td>
+</tr>
+<tr class="even">
+<td align="left">expertise support</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">conversation</td>
+<td align="right">36</td>
+<td align="right">0.12</td>
+</tr>
+<tr class="even">
+<td align="left">celebration</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">BC impact</td>
+<td align="right">43</td>
+<td align="right">0.14</td>
+</tr>
+<tr class="even">
+<td align="left">disrupteverything</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">influencers</td>
+<td align="right">78</td>
+<td align="right">0.26</td>
+</tr>
+<tr class="even">
+<td align="left">beyond</td>
+<td align="right">1</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">hashtags</td>
+<td align="right">101</td>
+<td align="right">0.34</td>
+</tr>
+<tr class="even">
+<td align="left">virtual participation</td>
+<td align="right">5</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="odd">
+<td align="left">humanize</td>
+<td align="right">27</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="even">
+<td align="left">jmm experience</td>
+<td align="right">7</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="odd">
+<td align="left">math experience</td>
+<td align="right">3</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">futures</td>
+<td align="right">5</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="odd">
+<td align="left">math practice</td>
+<td align="right">31</td>
+<td align="right">0.10</td>
+</tr>
+<tr class="even">
+<td align="left">current events</td>
+<td align="right">13</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="odd">
+<td align="left">allyship in math</td>
+<td align="right">11</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="even">
+<td align="left">CC impact</td>
+<td align="right">4</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">representation</td>
+<td align="right">42</td>
+<td align="right">0.14</td>
+</tr>
+<tr class="even">
+<td align="left">lgbtq</td>
+<td align="right">10</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="odd">
+<td align="left">bipoc</td>
+<td align="right">27</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="even">
+<td align="left">gender</td>
+<td align="right">28</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="odd">
+<td align="left">indigenous</td>
+<td align="right">25</td>
+<td align="right">0.08</td>
+</tr>
+<tr class="even">
+<td align="left">power</td>
+<td align="right">41</td>
+<td align="right">0.14</td>
+</tr>
+<tr class="odd">
+<td align="left">advocacy</td>
+<td align="right">20</td>
+<td align="right">0.07</td>
+</tr>
+<tr class="even">
+<td align="left">learning</td>
+<td align="right">10</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="odd">
+<td align="left">economic</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">SJEDI impact</td>
+<td align="right">1</td>
+<td align="right">0.00</td>
+</tr>
+</tbody>
+</table>
 <p>How many were tagged Talk support?</p>
+<pre class="r"><code>talkSupportTweets=filter(OCT,grepl(&quot;talk support&quot;,BC.code))
+nrow(talkSupportTweets)</code></pre>
 <pre><code>## [1] 124</code></pre>
 <p>What about Strategic Planning?</p>
+<pre class="r"><code>#One liner
+nrow(filter(OCT,grepl(&quot;strategic planning&quot;,SO.code)))</code></pre>
 <pre><code>## [1] 30</code></pre>
 
 
@@ -451,6 +792,11 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
