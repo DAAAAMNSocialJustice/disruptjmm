@@ -1,0 +1,371 @@
+---
+title: "codebreaks"
+author: "Carrie Diaz Eaton"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(tidyverse) 
+library(tidytext) 
+library(rtweet)
+library(splitstackshape) 
+library(reshape2)
+library(ggplot2)
+library(forcats)
+```
+
+
+```{r} 
+#Copied from Code-Analysis.Rmd
+#Read in file
+DisruptCoded<-read.csv("./Final Coding.csv")
+
+
+#set up a summary dataframe and store theme counts and frequencies
+Themes<-c("Self organization", "Building community","Broadening the counterpublic", "Creating change in math", "SJEDI")
+Nper<-c(sum(DisruptCoded$Self.organization), sum(DisruptCoded$Building.community), sum(DisruptCoded$Broadening.the.counterpublic), sum(DisruptCoded$Creating.change.in.math), sum(DisruptCoded$SJEDI))
+Freqper <- Nper/nrow(DisruptCoded)
+ThemeSummary<-data.frame(Nper, Freqper)
+row.names(ThemeSummary)<-Themes
+
+#Examine only the non-RT
+#original content tweets (OCT) are original tweets (OT), replies, and quote tweets (QT) 
+whichRT<-str_detect(DisruptCoded$text, "^RT ")
+OCT<-filter(DisruptCoded,!whichRT)
+NperOCT<-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broadening.the.counterpublic), sum(OCT$Creating.change.in.math), sum(OCT$SJEDI))
+FreqperOCT <- NperOCT/nrow(OCT)
+ThemeSummary <- cbind(ThemeSummary, NperOCT, FreqperOCT)
+```
+```{r}
+#Tweet subsets of each code
+SOtweets<-filter(DisruptCoded,Self.organization == 1)
+BCtweets<-filter(DisruptCoded,Building.community == 1)
+BtCtweets<-filter(DisruptCoded,Broadening.the.counterpublic == 1)
+CCtweets<-filter(DisruptCoded,Creating.change.in.math == 1)
+SJtweets<-filter(DisruptCoded,SJEDI == 1)
+
+#TimeSeries of Tweets by hours
+#DisruptCoded<-cbind(DisruptCoded, time <- as.POSIXct(strptime(DisruptCoded$created_at, "%a, %d %b %Y %H:%M:%S %z", tz = "GMT")))
+```
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+SJEDI.codes<-cSplit(SJtweets, 'SJEDI.code', sep=";", direction = "wide", type.convert = FALSE)
+#View(SJEDI.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(SJEDI.codes)[grepl("SJEDI.code",colnames(SJEDI.codes))]
+just.codes<-select(SJEDI.codes,code.columns)
+just.codes<-cbind(X = SJEDI.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "SJEDI.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+SJEDI.counts <- long.codes %>% count(SJEDI.code)
+print(SJEDI.counts)
+```
+
+
+
+## Visualize
+```{r}
+# Barplot
+ggplot(SJEDI.counts, aes(x=SJEDI.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('SJEDIplot.jpg')
+
+# Reorder following the value of another column:
+SJEDIplot<- SJEDI.counts %>%
+  mutate(name = fct_reorder(SJEDI.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+SJEDIplot
+```
+
+
+
+## Building Community
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+BC.codes<-cSplit(BCtweets, 'BC.code', sep=";", direction = "wide", type.convert = FALSE)
+#View(BC.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(BC.codes)[grepl("BC.code",colnames(BC.codes))]
+just.codes<-select(BC.codes,code.columns)
+just.codes<-cbind(X = BC.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "BC.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+BC.counts <- long.codes %>% count(BC.code)
+print(BC.counts)
+```
+
+
+
+## Visualize
+```{r}
+# Make
+# Barplot
+ggplot(BC.counts, aes(x=BC.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('BCplot.jpg')
+
+# Reorder following the value of another column:
+BCplot<- BC.counts %>%
+  mutate(name = fct_reorder(BC.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BCplot
+```
+
+
+
+## Broadening the Conversation
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+BtC.codes<-cSplit(BtCtweets, 'BtC.code', sep=";", direction = "wide", type.convert = FALSE)
+#View(BtC.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(BtC.codes)[grepl("BtC.code",colnames(BtC.codes))]
+just.codes<-select(BtC.codes,code.columns)
+just.codes<-cbind(X = BtC.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "BtC.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+BtC.counts <- long.codes %>% count(BtC.code)
+print(BtC.counts)
+```
+
+
+## Visualize
+```{r}
+# Make
+# Barplot
+ggplot(BC.counts, aes(x=BC.code, y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
+## Ordered version
+```{r}
+# prep to save as jpg
+jpeg('BtCplot.jpg')
+
+# Reorder following the value of another column:
+BtCplot<- BtC.counts %>%
+  mutate(name = fct_reorder(BtC.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BtCplot
+```
+
+## Creating Change in Math
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+CCM.codes<-cSplit(CCtweets, 'CCM.code', sep=";", direction = "wide", type.convert = FALSE)
+#View(CCM.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(CCM.codes)[grepl("CCM.code",colnames(CCM.codes))]
+just.codes<-select(CCM.codes,code.columns)
+just.codes<-cbind(X = CCM.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "CCM.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+CCM.counts <- long.codes %>% count(CCM.code)
+print(CCM.counts)
+```
+
+## Visualize
+```{r}
+## Ordered version of barplot
+
+# prep to save as jpg
+jpeg('CCMplot.jpg')
+
+# Reorder following the value of another column:
+CCMplot<- CCM.counts %>%
+  mutate(name = fct_reorder(CCM.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+CCMplot
+```
+
+
+
+## Self-Organization
+
+```{r}
+# flatten across ;
+# this will create a separate column for each code
+# unfortunately the "long" version is not working
+SO.codes<-cSplit(SOtweets, 'SO.code', sep=";", direction = "wide", type.convert = FALSE)
+#View(SO.codes)
+```
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+code.columns<-colnames(SO.codes)[grepl("SO.code",colnames(SO.codes))]
+just.codes<-select(SO.codes,code.columns)
+just.codes<-cbind(X = SO.codes$X,just.codes)
+long.codes<-melt(just.codes, id = "X", value.name = "SO.code", na.rm = TRUE)
+
+```
+
+## Summarize data
+```{r}
+SO.counts <- long.codes %>% count(SO.code)
+print(SO.counts)
+```
+
+## Visualize
+```{r}
+# Ordered version
+
+# prep to save as jpg
+jpeg('SOplot.jpg')
+
+# Reorder following the value of another column:
+SOplot<- SO.counts %>%
+  mutate(name = fct_reorder(SO.code, n)) %>%
+  ggplot(aes(x=name, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip() +
+    xlab("") +
+    theme_bw()
+
+#turn off plot writing
+dev.off()
+
+BCplot
+```
+
+
+
+
+## All codes
+
+```{r}
+# manually create long version
+# but to simplify, I'm only keeping the tweet # X column
+colnames(SJEDI.counts)[1]<-"code" 
+colnames(BC.counts)[1]<-"code" 
+colnames(BtC.counts)[1]<-"code" 
+colnames(CCM.counts)[1]<-"code" 
+colnames(SO.counts)[1]<-"code" 
+
+all.codes <- bind_rows("SJEDI" = SJEDI.counts, "BC" = BC.counts, "BtC" = BtC.counts, "CCM" = CCM.counts, "SO" = SO.counts, .id = "Bucket")
+
+print(all.codes)
+
+```
+
+
+## Visualize
+```{r}
+# Ordered version
+
+# prep to save as jpg
+jpeg('allcodesplot.jpg')
+
+# Reorder following the value of another column:
+allcodesplot<- ggplot(all.codes, aes(x=code, y = n)) +
+    geom_bar(stat="identity") +
+    coord_flip()
+
+#turn off plot writing
+dev.off()
+
+allcodesplot
+```
+
+
+
+

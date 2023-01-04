@@ -208,6 +208,83 @@ window.buildTabsets = function(tocID) {
 };
 
 </script>
+<script>
+window.initializeCodeFolding = function(show) {
+
+  // handlers for show-all and hide all
+  $("#rmd-show-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('show');
+    });
+  });
+  $("#rmd-hide-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('hide');
+    });
+  });
+
+  // index for unique code element ids
+  var currentIndex = 1;
+
+  // select all R code blocks
+  var rCodeBlocks = $('pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan, pre.julia, pre.foldable');
+  rCodeBlocks.each(function() {
+    // skip if the block has fold-none class
+    if ($(this).hasClass('fold-none')) return;
+
+    // create a collapsable div to wrap the code in
+    var div = $('<div class="collapse r-code-collapse"></div>');
+    var showThis = (show || $(this).hasClass('fold-show')) && !$(this).hasClass('fold-hide');
+    var id = 'rcode-643E0F36' + currentIndex++;
+    div.attr('id', id);
+    $(this).before(div);
+    $(this).detach().appendTo(div);
+
+    // add a show code button right above
+    var showCodeText = $('<span>' + (showThis ? 'Hide' : 'Code') + '</span>');
+    var showCodeButton = $('<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm code-folding-btn pull-right float-right"></button>');
+    showCodeButton.append(showCodeText);
+    showCodeButton
+        .attr('data-toggle', 'collapse')
+        .attr('data-bs-toggle', 'collapse') // BS5
+        .attr('data-target', '#' + id)
+        .attr('data-bs-target', '#' + id)   // BS5
+        .attr('aria-expanded', showThis)
+        .attr('aria-controls', id);
+
+    var buttonRow = $('<div class="row"></div>');
+    var buttonCol = $('<div class="col-md-12"></div>');
+
+    buttonCol.append(showCodeButton);
+    buttonRow.append(buttonCol);
+
+    div.before(buttonRow);
+
+    // show the div if necessary
+    if (showThis) div.collapse('show');
+
+    // update state of button on show/hide
+    //   * Change text
+    //   * add a class for intermediate states styling
+    div.on('hide.bs.collapse', function () {
+      showCodeText.text('Code');
+      showCodeButton.addClass('btn-collapsing');
+    });
+    div.on('hidden.bs.collapse', function () {
+      showCodeButton.removeClass('btn-collapsing');
+    });
+    div.on('show.bs.collapse', function () {
+      showCodeText.text('Hide');
+      showCodeButton.addClass('btn-expanding');
+    });
+    div.on('shown.bs.collapse', function () {
+      showCodeButton.removeClass('btn-expanding');
+    });
+
+  });
+
+}
+</script>
 <style type="text/css">.hljs-literal {
 color: #990073;
 }
@@ -331,6 +408,9 @@ display: none;
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
 
 
@@ -347,6 +427,14 @@ display: none;
 
 <div id="header">
 
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
 
 
 <h1 class="title toc-ignore">Data Analysis</h1>
@@ -355,7 +443,42 @@ display: none;
 </div>
 
 
+<pre class="r"><code># packages
+library(tidyverse) 
+library(tidytext) 
+library(rtweet)
+library(ggplot2)
+library(knitr)
+
+#Read in file
+DisruptCoded&lt;-read.csv(&quot;./Final Coding.csv&quot;)
+
+
+#set up a summary dataframe and store theme counts and frequencies
+Themes&lt;-c(&quot;Self organization&quot;, &quot;Building community&quot;,&quot;Broadening the counterpublic&quot;, &quot;Creating change in math&quot;, &quot;SJEDI&quot;)
+Nper&lt;-c(sum(DisruptCoded$Self.organization), sum(DisruptCoded$Building.community), sum(DisruptCoded$Broadening.the.counterpublic), sum(DisruptCoded$Creating.change.in.math), sum(DisruptCoded$SJEDI))
+Freqper &lt;- Nper/nrow(DisruptCoded)
+ThemeSummary&lt;-data.frame(Nper, Freqper)
+row.names(ThemeSummary)&lt;-Themes
+
+#Examine only the non-RT
+#original content tweets (OCT) are original tweets (OT), replies, and quote tweets (QT) 
+whichRT&lt;-str_detect(DisruptCoded$text, &quot;^RT &quot;)
+OCT&lt;-filter(DisruptCoded,!whichRT)
+NperOCT&lt;-c(sum(OCT$Self.organization), sum(OCT$Building.community), sum(OCT$Broadening.the.counterpublic), sum(OCT$Creating.change.in.math), sum(OCT$SJEDI))
+FreqperOCT &lt;- NperOCT/nrow(OCT)
+ThemeSummary &lt;- cbind(ThemeSummary, NperOCT, FreqperOCT)</code></pre>
+<pre class="r"><code>#Tweet subsets of each code
+SOtweets&lt;-filter(DisruptCoded,Self.organization == 1)
+BCtweets&lt;-filter(DisruptCoded,Building.community == 1)
+BtCtweets&lt;-filter(DisruptCoded,Broadening.the.counterpublic == 1)
+CCtweets&lt;-filter(DisruptCoded,Creating.change.in.math == 1)
+SJtweets&lt;-filter(DisruptCoded,SJEDI == 1)
+
+#TimeSeries of Tweets by hours
+#DisruptCoded&lt;-cbind(DisruptCoded, time &lt;- as.POSIXct(strptime(DisruptCoded$created_at, &quot;%a, %d %b %Y %H:%M:%S %z&quot;, tz = &quot;GMT&quot;)))</code></pre>
 <p>How many tweets were in each bucket?</p>
+<pre class="r"><code>kable(ThemeSummary, col.names=c(&quot;Number of tweets&quot;, &quot;Frequency of tweets&quot;, &quot;Number of original tweets&quot;, &quot;Frequency of original tweets&quot;),digits=c(0,2,0,2,0))</code></pre>
 <table style="width:100%;">
 <colgroup>
 <col width="23%" />
@@ -375,31 +498,31 @@ display: none;
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">Self.organization</td>
-<td align="right">743</td>
+<td align="left">Self organization</td>
+<td align="right">742</td>
 <td align="right">0.66</td>
-<td align="right">173</td>
+<td align="right">172</td>
 <td align="right">0.58</td>
 </tr>
 <tr class="even">
-<td align="left">Building.community</td>
-<td align="right">855</td>
+<td align="left">Building community</td>
+<td align="right">856</td>
 <td align="right">0.76</td>
-<td align="right">226</td>
+<td align="right">227</td>
 <td align="right">0.76</td>
 </tr>
 <tr class="odd">
-<td align="left">Broadening.the.counterpublic</td>
-<td align="right">537</td>
-<td align="right">0.48</td>
-<td align="right">140</td>
+<td align="left">Broadening the counterpublic</td>
+<td align="right">534</td>
 <td align="right">0.47</td>
+<td align="right">137</td>
+<td align="right">0.46</td>
 </tr>
 <tr class="even">
-<td align="left">Creating.change.in.math</td>
-<td align="right">471</td>
+<td align="left">Creating change in math</td>
+<td align="right">470</td>
 <td align="right">0.42</td>
-<td align="right">90</td>
+<td align="right">89</td>
 <td align="right">0.30</td>
 </tr>
 <tr class="odd">
@@ -411,12 +534,1772 @@ display: none;
 </tr>
 </tbody>
 </table>
-<p>How many tweets were tagged indigenous?</p>
-<pre><code>## [1] 25</code></pre>
-<p>How many were tagged Talk support?</p>
-<pre><code>## [1] 124</code></pre>
-<p>What about Strategic Planning?</p>
-<pre><code>## [1] 30</code></pre>
+<p>Let’s compute the frequency of the tags</p>
+<pre class="r"><code>SOtags &lt;- c(&quot;amplification&quot;, &quot;activation&quot;, &quot;strategic planning&quot;, &quot;SO impact&quot;, &quot;troll&quot;)
+SOtagCount &lt;- data.frame(sapply(SOtags, function(tag) return(nrow(filter(OCT,grepl(tag,SO.code))))))
+colnames(SOtagCount)[1] &lt;- &quot;Number&quot;
+SOtagCount[&#39;Bucket&#39;]=&quot;Self Organization&quot;
+
+BCtags &lt;- c(&quot;thankful&quot;, &quot;talk support&quot;, &quot;belonging&quot;, &quot;emotional support&quot;, &quot;expertise support&quot;, &quot;conversation&quot;, &quot;celebration&quot;, &quot;BC impact&quot;)
+BCtagCount &lt;- data.frame(sapply(BCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BC.code))))))
+colnames(BCtagCount)[1] &lt;- &quot;Number&quot;
+BCtagCount[&#39;Bucket&#39;]=&quot;Building Community&quot;
+
+BtCtags &lt;- c(&quot;disrupteverything&quot;, &quot;influencers&quot;, &quot;beyond&quot;, &quot;hashtags&quot;, &quot;virtual participation&quot;)
+BtCtagCount &lt;- data.frame(sapply(BtCtags, function(tag) return(nrow(filter(OCT,grepl(tag,BtC.code))))))
+colnames(BtCtagCount)[1] &lt;- &quot;Number&quot;
+BtCtagCount[&#39;Bucket&#39;]=&quot;Broadening the Counterpublic&quot;
+
+CCMtags &lt;- c(&quot;humanize&quot;, &quot;jmm experience&quot;, &quot;math experience&quot;, &quot;futures&quot;, &quot;math practice&quot;, &quot;current events&quot;, &quot;allyship in math&quot;, &quot;CC impact&quot;)
+CCMtagCount &lt;- data.frame(sapply(CCMtags, function(tag) return(nrow(filter(OCT,grepl(tag,CCM.code))))))
+colnames(CCMtagCount)[1] &lt;- &quot;Number&quot;
+CCMtagCount[&#39;Bucket&#39;]=&quot;Creating Change in Math&quot;
+
+SJEDItags&lt;-c(&quot;representation&quot;, &quot;lgbtq&quot;, &quot;bipoc&quot;, &quot;gender&quot;, &quot;indigenous&quot;, &quot;power&quot;, &quot;advocacy&quot;, &quot;learning&quot;, &quot;economic&quot;, &quot;SJEDI impact&quot;)
+SJEDItagCount &lt;- data.frame(sapply(SJEDItags, function(tag) return(nrow(filter(OCT,grepl(tag,SJEDI.code))))))
+colnames(SJEDItagCount)[1] &lt;- &quot;Number&quot;
+SJEDItagCount[&#39;Bucket&#39;]=&quot;SJEDI&quot;
+
+TagCounts &lt;- rbind(SOtagCount, BCtagCount, BtCtagCount, CCMtagCount, SJEDItagCount)
+TagCounts &lt;- cbind(TagCounts, TagCounts$Number/nrow(OCT))
+colnames(TagCounts)[3] &lt;- &quot;Frequency&quot;
+kable(TagCounts[order(TagCounts$Number,decreasing=TRUE),c(2,1,3)], digits=c(0,0,2))</code></pre>
+<table>
+<colgroup>
+<col width="32%" />
+<col width="42%" />
+<col width="10%" />
+<col width="14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="left">Bucket</th>
+<th align="right">Number</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">amplification</td>
+<td align="left">Self Organization</td>
+<td align="right">128</td>
+<td align="right">0.43</td>
+</tr>
+<tr class="even">
+<td align="left">talk support</td>
+<td align="left">Building Community</td>
+<td align="right">125</td>
+<td align="right">0.42</td>
+</tr>
+<tr class="odd">
+<td align="left">hashtags</td>
+<td align="left">Broadening the Counterpublic</td>
+<td align="right">103</td>
+<td align="right">0.34</td>
+</tr>
+<tr class="even">
+<td align="left">influencers</td>
+<td align="left">Broadening the Counterpublic</td>
+<td align="right">80</td>
+<td align="right">0.27</td>
+</tr>
+<tr class="odd">
+<td align="left">BC impact</td>
+<td align="left">Building Community</td>
+<td align="right">46</td>
+<td align="right">0.15</td>
+</tr>
+<tr class="even">
+<td align="left">representation</td>
+<td align="left">SJEDI</td>
+<td align="right">44</td>
+<td align="right">0.15</td>
+</tr>
+<tr class="odd">
+<td align="left">conversation</td>
+<td align="left">Building Community</td>
+<td align="right">41</td>
+<td align="right">0.14</td>
+</tr>
+<tr class="even">
+<td align="left">power</td>
+<td align="left">SJEDI</td>
+<td align="right">41</td>
+<td align="right">0.14</td>
+</tr>
+<tr class="odd">
+<td align="left">strategic planning</td>
+<td align="left">Self Organization</td>
+<td align="right">32</td>
+<td align="right">0.11</td>
+</tr>
+<tr class="even">
+<td align="left">math practice</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">31</td>
+<td align="right">0.10</td>
+</tr>
+<tr class="odd">
+<td align="left">thankful</td>
+<td align="left">Building Community</td>
+<td align="right">29</td>
+<td align="right">0.10</td>
+</tr>
+<tr class="even">
+<td align="left">humanize</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">28</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="odd">
+<td align="left">gender</td>
+<td align="left">SJEDI</td>
+<td align="right">28</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="even">
+<td align="left">bipoc</td>
+<td align="left">SJEDI</td>
+<td align="right">27</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="odd">
+<td align="left">indigenous</td>
+<td align="left">SJEDI</td>
+<td align="right">26</td>
+<td align="right">0.09</td>
+</tr>
+<tr class="even">
+<td align="left">advocacy</td>
+<td align="left">SJEDI</td>
+<td align="right">20</td>
+<td align="right">0.07</td>
+</tr>
+<tr class="odd">
+<td align="left">SO impact</td>
+<td align="left">Self Organization</td>
+<td align="right">17</td>
+<td align="right">0.06</td>
+</tr>
+<tr class="even">
+<td align="left">belonging</td>
+<td align="left">Building Community</td>
+<td align="right">15</td>
+<td align="right">0.05</td>
+</tr>
+<tr class="odd">
+<td align="left">emotional support</td>
+<td align="left">Building Community</td>
+<td align="right">15</td>
+<td align="right">0.05</td>
+</tr>
+<tr class="even">
+<td align="left">current events</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">13</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="odd">
+<td align="left">allyship in math</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">11</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="even">
+<td align="left">lgbtq</td>
+<td align="left">SJEDI</td>
+<td align="right">11</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="odd">
+<td align="left">learning</td>
+<td align="left">SJEDI</td>
+<td align="right">10</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="even">
+<td align="left">jmm experience</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">7</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="odd">
+<td align="left">virtual participation</td>
+<td align="left">Broadening the Counterpublic</td>
+<td align="right">6</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="even">
+<td align="left">futures</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">5</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="odd">
+<td align="left">activation</td>
+<td align="left">Self Organization</td>
+<td align="right">4</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">CC impact</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">4</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">disrupteverything</td>
+<td align="left">Broadening the Counterpublic</td>
+<td align="right">3</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">math experience</td>
+<td align="left">Creating Change in Math</td>
+<td align="right">3</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">troll</td>
+<td align="left">Self Organization</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">celebration</td>
+<td align="left">Building Community</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">economic</td>
+<td align="left">SJEDI</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">SJEDI impact</td>
+<td align="left">SJEDI</td>
+<td align="right">2</td>
+<td align="right">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">beyond</td>
+<td align="left">Broadening the Counterpublic</td>
+<td align="right">1</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">expertise support</td>
+<td align="left">Building Community</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+</tr>
+</tbody>
+</table>
+<p>Below, each column represents the percentage of tweets in that row
+that also have the code for that column<br />
+For example, 13% of the tweets coded “strategic planning” are also coded
+“amplification”, but only 3% of tweets coded “amplification” are also
+coded “strategic planning”.</p>
+<pre class="r"><code>tags=c(SOtags,BCtags,BtCtags,CCMtags,SJEDItags)
+coincidence &lt;- function(tag1, tag2) {
+  t1 &lt;- filter(OCT,grepl(tag1,paste(SO.code,BC.code,BtC.code,CCM.code,SJEDI.code)))
+  return(nrow(filter(t1,grepl(tag2,paste(SO.code,BC.code,BtC.code,CCM.code,SJEDI.code))))/nrow(t1))
+}
+coincidence_df &lt;- outer(tags,tags,Vectorize(coincidence))
+colnames(coincidence_df) &lt;- tags
+rownames(coincidence_df) &lt;- tags
+kable(coincidence_df,digits=2)</code></pre>
+<table style="width:100%;">
+<colgroup>
+<col width="4%" />
+<col width="3%" />
+<col width="2%" />
+<col width="4%" />
+<col width="2%" />
+<col width="1%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="4%" />
+<col width="4%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="4%" />
+<col width="2%" />
+<col width="1%" />
+<col width="2%" />
+<col width="4%" />
+<col width="2%" />
+<col width="3%" />
+<col width="3%" />
+<col width="1%" />
+<col width="3%" />
+<col width="3%" />
+<col width="3%" />
+<col width="2%" />
+<col width="3%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="2%" />
+<col width="1%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">amplification</th>
+<th align="right">activation</th>
+<th align="right">strategic planning</th>
+<th align="right">SO impact</th>
+<th align="right">troll</th>
+<th align="right">thankful</th>
+<th align="right">talk support</th>
+<th align="right">belonging</th>
+<th align="right">emotional support</th>
+<th align="right">expertise support</th>
+<th align="right">conversation</th>
+<th align="right">celebration</th>
+<th align="right">BC impact</th>
+<th align="right">disrupteverything</th>
+<th align="right">influencers</th>
+<th align="right">beyond</th>
+<th align="right">hashtags</th>
+<th align="right">virtual participation</th>
+<th align="right">humanize</th>
+<th align="right">jmm experience</th>
+<th align="right">math experience</th>
+<th align="right">futures</th>
+<th align="right">math practice</th>
+<th align="right">current events</th>
+<th align="right">allyship in math</th>
+<th align="right">CC impact</th>
+<th align="right">representation</th>
+<th align="right">lgbtq</th>
+<th align="right">bipoc</th>
+<th align="right">gender</th>
+<th align="right">indigenous</th>
+<th align="right">power</th>
+<th align="right">advocacy</th>
+<th align="right">learning</th>
+<th align="right">economic</th>
+<th align="right">SJEDI impact</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">amplification</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.69</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.01</td>
+<td align="right">0.37</td>
+<td align="right">0.00</td>
+<td align="right">0.42</td>
+<td align="right">0.00</td>
+<td align="right">0.16</td>
+<td align="right">0.03</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.02</td>
+<td align="right">0.07</td>
+<td align="right">0.01</td>
+<td align="right">0.25</td>
+<td align="right">0.05</td>
+<td align="right">0.11</td>
+<td align="right">0.12</td>
+<td align="right">0.13</td>
+<td align="right">0.19</td>
+<td align="right">0.08</td>
+<td align="right">0.05</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">activation</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">strategic planning</td>
+<td align="right">0.16</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.06</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.47</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.38</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">SO impact</td>
+<td align="right">0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.18</td>
+<td align="right">1.00</td>
+<td align="right">0.12</td>
+<td align="right">0.18</td>
+<td align="right">0.06</td>
+<td align="right">0.06</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.29</td>
+<td align="right">0.00</td>
+<td align="right">0.18</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0.24</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+</tr>
+<tr class="odd">
+<td align="left">troll</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">thankful</td>
+<td align="right">0.28</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.10</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.34</td>
+<td align="right">0.07</td>
+<td align="right">0.03</td>
+<td align="right">0</td>
+<td align="right">0.17</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.17</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.10</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="odd">
+<td align="left">talk support</td>
+<td align="right">0.70</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">1.00</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0</td>
+<td align="right">0.05</td>
+<td align="right">0.01</td>
+<td align="right">0.03</td>
+<td align="right">0.01</td>
+<td align="right">0.35</td>
+<td align="right">0.00</td>
+<td align="right">0.40</td>
+<td align="right">0.01</td>
+<td align="right">0.14</td>
+<td align="right">0.01</td>
+<td align="right">0.01</td>
+<td align="right">0.01</td>
+<td align="right">0.15</td>
+<td align="right">0.05</td>
+<td align="right">0.07</td>
+<td align="right">0.01</td>
+<td align="right">0.11</td>
+<td align="right">0.05</td>
+<td align="right">0.14</td>
+<td align="right">0.18</td>
+<td align="right">0.17</td>
+<td align="right">0.16</td>
+<td align="right">0.04</td>
+<td align="right">0.02</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">belonging</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.27</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.13</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">emotional support</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.07</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">expertise support</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+<td align="right">NaN</td>
+</tr>
+<tr class="odd">
+<td align="left">conversation</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.37</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.15</td>
+<td align="right">0.05</td>
+<td align="right">0.02</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.02</td>
+<td align="right">0.10</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">celebration</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">BC impact</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.09</td>
+<td align="right">0.04</td>
+<td align="right">0.11</td>
+<td align="right">0</td>
+<td align="right">0.07</td>
+<td align="right">0.02</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.24</td>
+<td align="right">0.00</td>
+<td align="right">0.43</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.09</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.02</td>
+<td align="right">0.04</td>
+<td align="right">0.02</td>
+<td align="right">0.04</td>
+<td align="right">0.11</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+</tr>
+<tr class="even">
+<td align="left">disrupteverything</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.67</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">influencers</td>
+<td align="right">0.59</td>
+<td align="right">0.01</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.55</td>
+<td align="right">0.04</td>
+<td align="right">0.03</td>
+<td align="right">0</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.66</td>
+<td align="right">0.01</td>
+<td align="right">0.20</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+<td align="right">0.01</td>
+<td align="right">0.16</td>
+<td align="right">0.04</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+<td align="right">0.19</td>
+<td align="right">0.10</td>
+<td align="right">0.09</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.14</td>
+<td align="right">0.09</td>
+<td align="right">0.06</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">beyond</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">hashtags</td>
+<td align="right">0.52</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.04</td>
+<td align="right">0.01</td>
+<td align="right">0.01</td>
+<td align="right">0.49</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0</td>
+<td align="right">0.04</td>
+<td align="right">0.01</td>
+<td align="right">0.19</td>
+<td align="right">0.02</td>
+<td align="right">0.51</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.02</td>
+<td align="right">0.01</td>
+<td align="right">0.00</td>
+<td align="right">0.16</td>
+<td align="right">0.04</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.16</td>
+<td align="right">0.06</td>
+<td align="right">0.09</td>
+<td align="right">0.06</td>
+<td align="right">0.10</td>
+<td align="right">0.17</td>
+<td align="right">0.10</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">virtual participation</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.17</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.17</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.17</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">humanize</td>
+<td align="right">0.71</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0.61</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.11</td>
+<td align="right">0.00</td>
+<td align="right">0.57</td>
+<td align="right">0.00</td>
+<td align="right">0.46</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.32</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.04</td>
+<td align="right">0.11</td>
+<td align="right">0.07</td>
+<td align="right">0.04</td>
+<td align="right">0.14</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">jmm experience</td>
+<td align="right">0.57</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.43</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.29</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.71</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.29</td>
+<td align="right">0.14</td>
+<td align="right">0.14</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">math experience</td>
+<td align="right">0.67</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.67</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">futures</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.40</td>
+<td align="right">0</td>
+<td align="right">0.40</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">math practice</td>
+<td align="right">0.55</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.03</td>
+<td align="right">0.61</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">0.00</td>
+<td align="right">0.42</td>
+<td align="right">0.00</td>
+<td align="right">0.52</td>
+<td align="right">0.00</td>
+<td align="right">0.29</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.16</td>
+<td align="right">0.03</td>
+<td align="right">0.06</td>
+<td align="right">0.03</td>
+<td align="right">0.10</td>
+<td align="right">0.10</td>
+<td align="right">0.13</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">current events</td>
+<td align="right">0.15</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.15</td>
+<td align="right">0.46</td>
+<td align="right">0.00</td>
+<td align="right">0.15</td>
+<td align="right">0</td>
+<td align="right">0.15</td>
+<td align="right">0.00</td>
+<td align="right">0.31</td>
+<td align="right">0.00</td>
+<td align="right">0.23</td>
+<td align="right">0.00</td>
+<td align="right">0.31</td>
+<td align="right">0.00</td>
+<td align="right">0.15</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.31</td>
+<td align="right">0.08</td>
+<td align="right">0.23</td>
+<td align="right">0.23</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">allyship in math</td>
+<td align="right">0.82</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.82</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.18</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.18</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.45</td>
+<td align="right">0.18</td>
+<td align="right">0.18</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">CC impact</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+</tr>
+<tr class="odd">
+<td align="left">representation</td>
+<td align="right">0.73</td>
+<td align="right">0.02</td>
+<td align="right">0.09</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.32</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.34</td>
+<td align="right">0.00</td>
+<td align="right">0.36</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.11</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0.11</td>
+<td align="right">0.02</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.09</td>
+<td align="right">0.07</td>
+<td align="right">0.16</td>
+<td align="right">0.16</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">lgbtq</td>
+<td align="right">0.55</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.55</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.73</td>
+<td align="right">0.00</td>
+<td align="right">0.55</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.18</td>
+<td align="right">0.09</td>
+<td align="right">0.00</td>
+<td align="right">0.18</td>
+<td align="right">0.36</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">bipoc</td>
+<td align="right">0.52</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.67</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.26</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="right">0.00</td>
+<td align="right">0.11</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.15</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.07</td>
+<td align="right">1.00</td>
+<td align="right">0.26</td>
+<td align="right">0.26</td>
+<td align="right">0.37</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">gender</td>
+<td align="right">0.54</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.11</td>
+<td align="right">0.79</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.21</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.07</td>
+<td align="right">0.04</td>
+<td align="right">0.04</td>
+<td align="right">0.04</td>
+<td align="right">0.04</td>
+<td align="right">0.18</td>
+<td align="right">0.00</td>
+<td align="right">0.14</td>
+<td align="right">0.04</td>
+<td align="right">0.25</td>
+<td align="right">1.00</td>
+<td align="right">0.32</td>
+<td align="right">0.14</td>
+<td align="right">0.14</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">indigenous</td>
+<td align="right">0.65</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.81</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.04</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.38</td>
+<td align="right">0.00</td>
+<td align="right">0.04</td>
+<td align="right">0.04</td>
+<td align="right">0.04</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.12</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0.27</td>
+<td align="right">0.35</td>
+<td align="right">1.00</td>
+<td align="right">0.19</td>
+<td align="right">0.12</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">power</td>
+<td align="right">0.59</td>
+<td align="right">0.00</td>
+<td align="right">0.02</td>
+<td align="right">0.05</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.49</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="right">0.00</td>
+<td align="right">0.27</td>
+<td align="right">0.00</td>
+<td align="right">0.44</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">0.02</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.07</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.17</td>
+<td align="right">0.05</td>
+<td align="right">0.24</td>
+<td align="right">0.10</td>
+<td align="right">0.12</td>
+<td align="right">1.00</td>
+<td align="right">0.12</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">advocacy</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">0</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.35</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.20</td>
+<td align="right">0.05</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.35</td>
+<td align="right">0.20</td>
+<td align="right">0.10</td>
+<td align="right">0.20</td>
+<td align="right">0.15</td>
+<td align="right">0.25</td>
+<td align="right">1.00</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">learning</td>
+<td align="right">0.60</td>
+<td align="right">0.10</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.30</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.10</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.10</td>
+<td align="right">0.20</td>
+<td align="right">0.20</td>
+<td align="right">0.10</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="odd">
+<td align="left">economic</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+</tr>
+<tr class="even">
+<td align="left">SJEDI impact</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.50</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">1.00</td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -451,6 +2334,11 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
