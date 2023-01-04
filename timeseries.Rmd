@@ -1,0 +1,64 @@
+---
+title: "timeseries"
+author: "Carrie Diaz Eaton"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Time series plot of Tweets
+# uses DisruptCoded as a dataframe
+```{r}
+library(hrbrthemes)
+#hrbrthemes::import_roboto_condensed() 
+library(extrafont)
+font_import()
+loadfonts(device = "win")
+```
+
+## Data set
+```{r}
+df.days<-ts_data(DisruptCoded, "days")
+df.days$time <- as.Date(df.days$time, format="%Y-%m-%d")
+df.weeks <- ts_data(DisruptCoded, "weeks")
+df.weeks$time <- as.Date(df.weeks$time, format="%Y-%m-%d")
+```
+
+## plot
+```{r}
+p <- ggplot(df.days, aes(x=time, y=n)) +
+  geom_line() + scale_x_date(date_labels = "%b %Y") +
+    theme_ipsum() +  xlab("")
+p
+```
+
+#log plot
+```{r}
+plog<- ggplot(df.days, aes(x=time, y=log(n))) +
+  geom_line() + scale_x_date(date_labels = "%b %Y") +  xlab("") + ylab("Log(number of tweets)")
+plog
+```
+
+
+#log plot
+```{r}
+
+# prep to save as png
+png('timeseries.png', width = 800, height = 400)
+
+#weeks on a log scale
+qlog<- ggplot(df.weeks, aes(x=time, y=log(n))) +
+  geom_line() + scale_x_date(date_labels = "%b %Y") + 
+  xlab("") + ylab("Log(tweets)") + 
+  theme_light(base_size = 16) +
+  theme(axis.text = element_text(size = 18)) + 
+  geom_line(size=1)
+
+qlog
+
+#turn off plot writing
+dev.off()
+```
