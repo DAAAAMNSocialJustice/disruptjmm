@@ -19,6 +19,7 @@ library(splitstackshape)
 library(reshape2)
 library(ggplot2)
 library(forcats)
+library(tibble)
 ```
 
 
@@ -50,9 +51,6 @@ BCtweets<-filter(DisruptCoded,Building.community == 1)
 BtCtweets<-filter(DisruptCoded,Broadening.the.counterpublic == 1)
 CCtweets<-filter(DisruptCoded,Creating.change.in.math == 1)
 SJtweets<-filter(DisruptCoded,SJEDI == 1)
-
-#TimeSeries of Tweets by hours
-#DisruptCoded<-cbind(DisruptCoded, time <- as.POSIXct(strptime(DisruptCoded$created_at, "%a, %d %b %Y %H:%M:%S %z", tz = "GMT")))
 ```
 
 ```{r}
@@ -119,10 +117,12 @@ SJEDIplot
 # this will create a separate column for each code
 # unfortunately the "long" version is not working
 BC.codes<-cSplit(BCtweets, 'BC.code', sep=";", direction = "wide", type.convert = FALSE)
+
 #View(BC.codes)
 ```
 
 # but to simplify, I'm only keeping the tweet # X column
+```{r}
 code.columns<-colnames(BC.codes)[grepl("BC.code",colnames(BC.codes))]
 just.codes<-select(BC.codes,code.columns)
 just.codes<-cbind(X = BC.codes$X,just.codes)
@@ -339,25 +339,36 @@ colnames(BtC.counts)[1]<-"code"
 colnames(CCM.counts)[1]<-"code" 
 colnames(SO.counts)[1]<-"code" 
 
-all.codes <- bind_rows("SJEDI" = SJEDI.counts, "BC" = BC.counts, "BtC" = BtC.counts, "CCM" = CCM.counts, "SO" = SO.counts, .id = "Bucket")
+all.codes <- bind_rows("SJEDI" = SJEDI.counts, "BC" = BC.counts, "BtC" = BtC.counts, "CCM" = CCM.counts, "SO" = SO.counts, .id = "Theme")
 
 all.codes <- cbind(all.codes, "freq" = all.codes$n/dim(DisruptCoded)[1])
 
+# Order
+#make sure this theme is recognized as a factor
+all.codes$Theme <- ordered(all.codes$Theme,levels = c("SJEDI", "CCM", "BC", "BtC", "SO"))
+
+#save data
 print(all.codes)
 write.csv(all.codes, file = "allcodes.csv")
+
+all.codes.ordered <- all.codes[order(all.codes$Theme,-all.codes$n),]
+
 ```
+
 
 
 ## Visualize
 ```{r}
-# Ordered version
-
 # prep to save as jpg
-jpeg('allcodesplot.jpg')
+png(filename = 'allcodesplot.png', width = 600, height = 1000)
 
 # Reorder following the value of another column:
-allcodesplot<- ggplot(all.codes, aes(x=code, y = n)) +
-    geom_bar(stat="identity") +
+allcodesplot<- all.codes.ordered %>%
+    mutate(name = fct_reorder(code, n)) %>% 
+  ggplot(aes(x=name, y = n, group = Theme, fill = Theme)) +
+    geom_bar(position="dodge",stat="identity") +
+    scale_fill_brewer(palette = "Set1") +
+    xlab("") + ylab("Number of Tweets") +
     coord_flip()
 
 #turn off plot writing
