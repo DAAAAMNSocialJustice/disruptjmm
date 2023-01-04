@@ -122,8 +122,6 @@ BC.codes<-cSplit(BCtweets, 'BC.code', sep=";", direction = "wide", type.convert 
 #View(BC.codes)
 ```
 
-```{r}
-# manually create long version
 # but to simplify, I'm only keeping the tweet # X column
 code.columns<-colnames(BC.codes)[grepl("BC.code",colnames(BC.codes))]
 just.codes<-select(BC.codes,code.columns)
@@ -324,7 +322,7 @@ SOplot<- SO.counts %>%
 #turn off plot writing
 dev.off()
 
-BCplot
+SOplot
 ```
 
 
@@ -343,8 +341,10 @@ colnames(SO.counts)[1]<-"code"
 
 all.codes <- bind_rows("SJEDI" = SJEDI.counts, "BC" = BC.counts, "BtC" = BtC.counts, "CCM" = CCM.counts, "SO" = SO.counts, .id = "Bucket")
 
-print(all.codes)
+all.codes <- cbind(all.codes, "freq" = all.codes$n/dim(DisruptCoded)[1])
 
+print(all.codes)
+write.csv(all.codes, file = "allcodes.csv")
 ```
 
 
