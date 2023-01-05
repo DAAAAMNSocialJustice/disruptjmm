@@ -116,6 +116,13 @@ All of the Indigenous tweets:
 OCT %>% filter(grepl("indigenous",SJEDI.code)) %>% select(text) %>% mutate_all(linebreak) %>% kable
 ```
 
+## Humanize tweets
+```{r}
+#kable seems to choke on newlines in tweets
+#pipe through mutate_all(linebreak) to fix this
+OCT %>% filter(grepl("humanize",CCM.code)) %>% select(text) %>% mutate_all(linebreak) %>% kable
+```
+
 ## Only SO bucket tweets:
 ```{r}
 OCT %>% filter(Self.organization == 1, Building.community==0, Broadening.the.counterpublic==0,Creating.change.in.math==0,SJEDI==0) %>% select(user_username,text) 
