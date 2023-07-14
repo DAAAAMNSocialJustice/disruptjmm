@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(hrbrthemes)
 #hrbrthemes::import_roboto_condensed() 
 library(extrafont)
+library(rtweet)
 font_import()
 loadfonts(device = "win")
 ```
