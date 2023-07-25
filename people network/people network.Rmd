@@ -95,22 +95,6 @@ outdeg.peeps[ind][1:10]
 The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
 
 ```{r}
-#Degree of top 10 in order
-indeg.peeps <- degree(mathpeeps.g,  mode = "in",
-  loops = FALSE,
-  normalized = FALSE)
-names(indeg.peeps) <- V(mathpeeps.g)$name
-ind <- order(-indeg.peeps)
-indeg.peeps[ind][1:10]
-
-#Out degree of top 10 in order
-outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
-  loops = FALSE,
-  normalized = FALSE)
-names(outdeg.peeps) <- V(mathpeeps.g)$name
-ind <- order(-outdeg.peeps)
-outdeg.peeps[ind][1:10]
-
 #Betweenness of top 10 in order
 btwn.peeps <- betweenness(mathpeeps.g)
 names(btwn.peeps) <- V(mathpeeps.g)$name
@@ -133,8 +117,31 @@ wtc<-cluster_walktrap(mathpeeps.g)
 membership(wtc)
 modularity(mathpeeps.g, membership(wtc))
 
-cfg<-cluster_fast_greedy(mathpeeps.g)
-membership(cfg)
-modularity(mathpeeps.g, membership(cfg))
+#takes a while to run
+#optc<-optimal.community(mathpeeps.g)
+
+#gives like 312 communities with modularity 0.0637
+#ceb <-edge.betweenness.community(mathpeeps.g, directed= TRUE)
+#membership(ceb)
+#modularity(mathpeeps.g, membership(ceb))
+
+#gives 259 commnities with a modularity of 0.0192
+lpc<-label.propagation.community(mathpeeps.g)
+membership(lpc)
+modularity(mathpeeps.g, membership(lpc))
+
+#gives 8 communities with a modularity of 0.063
+# this gives almost the same value as the 213 communities, 
+# but makes a lot more sense
+infoc<-infomap.community(mathpeeps.g)
+membership(infoc)
+modularity(mathpeeps.g, membership(infoc))
+
+#connected components
+compc<-components(mathpeeps.g)
+membership(infoc)
+modularity(mathpeeps.g, membership(compc))
+
+
 ```
 
