@@ -1,0 +1,147 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+## Mise en place - Getting your workspace ready
+
+Load the igraph package
+```{r}
+# load igraph
+library(igraph)
+library(centiserve)
+```
+
+# Create Graph Object
+## This is the twitter network of users. Users are connected if there RT or reply or a quote tweet.
+
+### Read data file
+```{r}
+#read file in as members
+mt_edgelist <- read.csv("../data cleaning/people-edge-list.csv")
+View(mt_edgelist)
+head(mt_edgelist)
+```
+Note: the sender is in the first column and receiver in the second
+
+```{r}
+#create a matrix, just of CRSE and FAC1
+send_interact <- cbind(Sender = mt_edgelist$Sender,Interactor = mt_edgelist$Receiver)
+
+# check it out
+head(send_interact)
+dim(send_interact)
+```
+
+### Define network from edgelist
+```{r}
+# make a graph object
+mathpeeps.g <- graph.edgelist(send_interact, directed = TRUE)
+```
+
+
+### Visualize the group network
+Use the igraph documentation @igraph to comment what the code below is doing:
+
+* [layout_with_fr]{https://igraph.org/r/doc/layout_with_fr.html}  
+* [edge_attr]{https://igraph.org/r/doc/edge_attr.html}  Then run the following code & revise your code as necessary.  
+
+```{r}
+#plot features
+la <- layout_with_fr(mathpeeps.g)
+e.wt <- edge_attr(mathpeeps.g, "weight")
+
+#plot group network
+plot(mathpeeps.g, layout=la, vertex.size=10,edge.width=e.wt,vertex.label=V(mathpeeps.g)$name, edge.arrow.size = .2)
+```
+```{r}
+png("people.png", width = 465, height = 225, units='mm', res = 300)
+plot(mathpeeps.g, layout=la, vertex.size=2,edge.width=e.wt,vertex.label=V(mathpeeps.g)$name, edge.arrow.size = .2)
+dev.off()
+```
+
+
+### Network Statistics
+
+Degree exploration
+```{r}
+#Degree of top 10 in order
+deg.peeps <- degree(mathpeeps.g,  mode = "all",
+  loops = FALSE,
+  normalized = FALSE)
+names(deg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-deg.peeps)
+deg.peeps[ind][1:10]
+
+#Degree of top 10 in order
+indeg.peeps <- degree(mathpeeps.g,  mode = "in",
+  loops = FALSE,
+  normalized = FALSE)
+names(indeg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-indeg.peeps)
+indeg.peeps[ind][1:10]
+
+#Out degree of top 10 in order
+outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
+  loops = FALSE,
+  normalized = FALSE)
+names(outdeg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-outdeg.peeps)
+outdeg.peeps[ind][1:10]
+
+```
+
+The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
+
+```{r}
+#Betweenness of top 10 in order
+btwn.peeps <- betweenness(mathpeeps.g)
+names(btwn.peeps) <- V(mathpeeps.g)$name
+ind <- order(-btwn.peeps)
+btwn.peeps[ind][1:10]
+
+# katz centrality is like
+#eigenvector centrality for directed graphs
+#of top 10, but won't work if you have self-referential loops
+#cent.eig <- katzcent(mathpeeps.g)
+#names(cent.eig$vector) <- V(mathpeeps.g)$name
+#ind <- order(-cent.eig$vector)
+#cent.eig$vector[ind][1:10]
+
+``` 
+
+# Modularity
+```{r}
+wtc<-cluster_walktrap(mathpeeps.g)
+membership(wtc)
+modularity(mathpeeps.g, membership(wtc))
+
+#takes a while to run
+#optc<-optimal.community(mathpeeps.g)
+
+#gives like 312 communities with modularity 0.0637
+#ceb <-edge.betweenness.community(mathpeeps.g, directed= TRUE)
+#membership(ceb)
+#modularity(mathpeeps.g, membership(ceb))
+
+#gives 259 commnities with a modularity of 0.0192
+lpc<-label.propagation.community(mathpeeps.g)
+membership(lpc)
+modularity(mathpeeps.g, membership(lpc))
+
+#gives 8 communities with a modularity of 0.063
+# this gives almost the same value as the 213 communities, 
+# but makes a lot more sense
+infoc<-infomap.community(mathpeeps.g)
+membership(infoc)
+modularity(mathpeeps.g, membership(infoc))
+
+#connected components
+compc<-components(mathpeeps.g)
+membership(infoc)
+modularity(mathpeeps.g, membership(compc))
+
+
+```
+
