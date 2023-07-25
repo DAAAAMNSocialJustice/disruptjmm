@@ -10,6 +10,7 @@ Load the igraph package
 ```{r}
 # load igraph
 library(igraph)
+library(centiserve)
 ```
 
 # Create Graph Object
@@ -63,20 +64,77 @@ dev.off()
 
 ### Network Statistics
 
+Degree exploration
 ```{r}
-#Betweenness of top 10 in order
-btwn.fac <- betweenness(fac.g)
-names(btwn.fac) <- V(fac.g)$name
-ind <- order(-btwn.fac)
-btwn.fac[ind][1:10]
+#Degree of top 10 in order
+deg.peeps <- degree(mathpeeps.g,  mode = "all",
+  loops = FALSE,
+  normalized = FALSE)
+names(deg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-deg.peeps)
+deg.peeps[ind][1:10]
 
-#eigenvector centrality of top 10
-cent.eig <- evcent(fac.g)
-names(cent.eig$vector) <- V(fac.g)$name
-ind <- order(-cent.eig$vector)
-cent.eig$vector[ind][1:10]
+#Degree of top 10 in order
+indeg.peeps <- degree(mathpeeps.g,  mode = "in",
+  loops = FALSE,
+  normalized = FALSE)
+names(indeg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-indeg.peeps)
+indeg.peeps[ind][1:10]
+
+#Out degree of top 10 in order
+outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
+  loops = FALSE,
+  normalized = FALSE)
+names(outdeg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-outdeg.peeps)
+outdeg.peeps[ind][1:10]
+
+```
+
+The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
+
+```{r}
+#Degree of top 10 in order
+indeg.peeps <- degree(mathpeeps.g,  mode = "in",
+  loops = FALSE,
+  normalized = FALSE)
+names(indeg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-indeg.peeps)
+indeg.peeps[ind][1:10]
+
+#Out degree of top 10 in order
+outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
+  loops = FALSE,
+  normalized = FALSE)
+names(outdeg.peeps) <- V(mathpeeps.g)$name
+ind <- order(-outdeg.peeps)
+outdeg.peeps[ind][1:10]
+
+#Betweenness of top 10 in order
+btwn.peeps <- betweenness(mathpeeps.g)
+names(btwn.peeps) <- V(mathpeeps.g)$name
+ind <- order(-btwn.peeps)
+btwn.peeps[ind][1:10]
+
+# katz centrality is like
+#eigenvector centrality for directed graphs
+#of top 10, but won't work if you have self-referential loops
+#cent.eig <- katzcent(mathpeeps.g)
+#names(cent.eig$vector) <- V(mathpeeps.g)$name
+#ind <- order(-cent.eig$vector)
+#cent.eig$vector[ind][1:10]
 
 ``` 
 
+# Modularity
+```{r}
+wtc<-cluster_walktrap(mathpeeps.g)
+membership(wtc)
+modularity(mathpeeps.g, membership(wtc))
 
-# Wrap up
+cfg<-cluster_fast_greedy(mathpeeps.g)
+membership(cfg)
+modularity(mathpeeps.g, membership(cfg))
+```
+
