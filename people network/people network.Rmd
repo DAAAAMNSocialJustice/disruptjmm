@@ -11,6 +11,7 @@ Load the igraph package
 # load igraph
 library(igraph)
 library(centiserve)
+library(tidyverse)
 ```
 
 # Create Graph Object
@@ -26,7 +27,7 @@ head(mt_edgelist)
 Note: the sender is in the first column and receiver in the second
 
 ```{r}
-#create a matrix, just of CRSE and FAC1
+#create a matrix, just of Sender and Receiver
 send_interact <- cbind(Sender = mt_edgelist$Sender,Interactor = mt_edgelist$Receiver)
 
 # check it out
@@ -94,6 +95,20 @@ outdeg.peeps[ind][1:10]
 
 The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
 
+Interesting that JointMath has the second highest Twitter outdegree. Do they autoretweet everything that they are tagged in?
+```{r}
+JointMath<-mt_edgelist[mt_edgelist$Sender == 'JointMath',]
+#did not use any of the hashtags or did not include a @JointMath tag
+NotHT20<-subset(JointMath, !grepl("#JMM2020", JointMath$text ), )
+NotHT<-subset(NotHT20, !grepl("#JMM2021", NotHT20$text ), )
+Notpinged<-subset(NotHT, !grepl("@JointMath", NotHT$text ))
+
+# for example - this has nothing that says RT me...
+Notpinged$text[12]
+```
+
+Clearly the JointMath handle was RTing JMM tweets
+
 ```{r}
 #Betweenness of top 10 in order
 btwn.peeps <- betweenness(mathpeeps.g)
@@ -111,10 +126,56 @@ btwn.peeps[ind][1:10]
 
 ``` 
 
+# Active Tweeters
+What were active tweeters doing. If you didn't just RT things other people wrote. What were you talking about?
+```{r}
+#Remove everyone with indegree 0
+#this removes RT and QT that no one else enaged with
+active.peeps<-subset(indeg.peeps, !grepl(0,indeg.peeps))
+#subset just these in the full data
+active.edgelist <- subset(mt_edgelist, grepl(paste(names(active.peeps), collapse='|'), mt_edgelist$Receiver))
+```
+
+##Define network
+```{r}
+#create a matrix, just of Sender and Receiver
+active.send_interact <- cbind(Sender = active.edgelist$Sender,Interactor = active.edgelist$Receiver)
+
+# check it out
+head(active.send_interact)
+dim(active.send_interact)
+```
+
+### Define network from edgelist
+```{r}
+# make a graph object
+activepeeps.g <- graph.edgelist(active.send_interact, directed = TRUE)
+```
+
+
+### Visualize the group network
+
+```{r}
+#plot features
+la <- layout_with_fr(activepeeps.g)
+e.wt <- edge_attr(activepeeps.g, "weight")
+
+#plot group network
+plot(activepeeps.g, layout=la, vertex.size=10,edge.width=e.wt,vertex.label=V(activepeeps.g)$name, edge.arrow.size = .2)
+```
+```{r}
+png("activepeople.png", width = 600, height = 600, units='mm', res = 600)
+plot(activepeeps.g, layout=la, vertex.size=2,edge.width=e.wt,vertex.label=V(activepeeps.g)$name, edge.arrow.size = .2)
+dev.off()
+```
+
+From this it seems like there are several people who are very well connected to each other (e.g. JointMath, pwr2dppl). Then there are people who are recruiting participation from outside the large interior cluster, engaging new networks (e.g. WanderingPoint, RG1gal, mathprofcarrie).  Is this how this plays out in the modularity clusters?
+
 # Modularity
 ```{r}
+#modularity 0.1105  37 communities
 wtc<-cluster_walktrap(mathpeeps.g)
-membership(wtc)
+#membership(wtc)
 modularity(mathpeeps.g, membership(wtc))
 
 #takes a while to run
@@ -125,23 +186,23 @@ modularity(mathpeeps.g, membership(wtc))
 #membership(ceb)
 #modularity(mathpeeps.g, membership(ceb))
 
-#gives 259 commnities with a modularity of 0.0192
-lpc<-label.propagation.community(mathpeeps.g)
-membership(lpc)
-modularity(mathpeeps.g, membership(lpc))
+#gives 259 communities with a modularity of 0.0192
+#lpc<-label.propagation.community(mathpeeps.g)
+#membership(lpc)
+#modularity(mathpeeps.g, membership(lpc))
 
-#gives 8 communities with a modularity of 0.063
+#gives 10 communities with a modularity of 0.065
 # this gives almost the same value as the 213 communities, 
 # but makes a lot more sense
 infoc<-infomap.community(mathpeeps.g)
-membership(infoc)
+#membership(infoc)
 modularity(mathpeeps.g, membership(infoc))
 
-#connected components
-compc<-components(mathpeeps.g)
-membership(infoc)
-modularity(mathpeeps.g, membership(compc))
+#connected components - 3 connected components
+# modularity 0.0083
+#compc<-components(mathpeeps.g)
+#membership(compc)
+#modularity(mathpeeps.g, membership(compc))
 
 
 ```
-
