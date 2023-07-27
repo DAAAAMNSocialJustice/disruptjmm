@@ -1,0 +1,166 @@
+#Load the disruptJMM data
+
+#### Note you will need to load the twitterData_tidy to run the code.
+library(readxl)
+twitterData_tidy <- read_excel("twitterData_tidy.xlsx")
+View(twitterData_tidy)
+
+# - Library's to load
+library(academictwitteR)
+library(tidytags)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+library(visNetwork)
+library(igraph)
+
+############## - Data Sorted by Month #####################
+timeSeriesMonth <- twitterData_tidy
+## Convert dates in new data frame from characters to format year-month-date
+timeSeriesMonth$created_at <- as.POSIXct(timeSeriesMonth$created_at) 
+
+## Create a month variable then group by months to summarize tweet numbers
+timeSeriesMonth <- timeSeriesMonth %>% 
+  select(created_at) %>%
+  mutate(month = floor_date(created_at, "month")) %>%
+  group_by(month) %>% 
+  summarize(tweets = n())
+
+## Plot #disruptJMM Tweets Over Time (2020-2021)
+plot_timeSeriesMonth <- ggplot(timeSeriesMonth, aes(x = month, y = tweets)) + 
+  geom_point() + 
+  geom_line() +
+  theme_minimal() +
+  scale_x_datetime(date_breaks = "2 months",
+                   date_labels = "%b, \n%Y") +
+  theme(axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+        plot.title = element_text(face = "bold")) +
+  labs (x = "Date", y = "Tweet Count",
+        title = "#disruptJMM Tweets Over Time (2020-2021)",
+        subtitle = "JMM 2020: Jan. 15th - 18th \nJMM 2021: Jan. 06th - 09th",
+        caption = "\nSource: Twitter's API via academictwitteR")
+
+## View plot
+plot_timeSeriesMonth
+###############################################################
+
+############## - By Day of 2020 During JMM #####################
+## Create new data frame from twitterData_tidy
+timeSeriesDay2020 <- twitterData_tidy %>% 
+  filter(str_detect(created_at, "2020-01"))
+
+## Convert dates in new data frame from characters to format year-month-date
+timeSeriesDay2020$created_at <- as.POSIXct(timeSeriesDay2020$created_at)
+
+## Create a month variable then group by days to summarize tweet numbers
+timeSeriesDay2020 <- timeSeriesDay2020 %>% 
+  select(created_at) %>%
+  mutate(day = floor_date(created_at, "day")) %>%
+  group_by(day) %>% 
+  summarize(tweets = n())
+
+## Plot #disruptJMM Tweets Over Time During JMM Conference (2020)
+plot_timeSeriesDay2020 <- ggplot(timeSeriesDay2020, aes(x = day, y = tweets)) + 
+  geom_point() + 
+  geom_line() +
+  theme_minimal() +
+  scale_x_datetime(date_breaks = "1 day",
+                   date_labels = "%a, \n%d") +
+  theme(axis.text.x = element_text(angle = 0,
+                                   vjust = 1,
+                                   hjust = 0.5),
+        plot.title = element_text(face = "bold")) +
+  labs (x = "Date", y = "Tweet Count",
+        title = "#disruptJMM Tweets During JMM (2020)",
+        subtitle = "JMM 2020: Jan. 15th - 18th",
+        caption = "\nSource: Twitter's API via academictwitteR")
+
+## View plot
+plot_timeSeriesDay2020
+################################################################
+
+
+############## - By Day of 2020 During JMM #####################
+## Create new data frame from twitterData_tidy
+timeSeriesDay2021 <- twitterData_tidy %>% 
+  filter(str_detect(created_at, "2021-01"))
+
+## Convert dates in new data frame from characters to format year-month-date
+timeSeriesDay2021$created_at <- as.POSIXct(timeSeriesDay2021$created_at)
+
+## Create a month variable then group by days to summarize tweet numbers
+timeSeriesDay2021 <- timeSeriesDay2021 %>% 
+  select(created_at) %>%
+  mutate(day = floor_date(created_at, "day")) %>%
+  group_by(day) %>% 
+  summarize(tweets = n())
+
+## Plot #disruptJMM Tweets Over Time During JMM Conference (2021)
+plot_timeSeriesDay2021 <- ggplot(timeSeriesDay2021, aes(x = day, y = tweets)) + 
+  theme_minimal() +
+  geom_point() + 
+  geom_line() +
+  scale_x_datetime(date_breaks = "1 day",
+                   date_labels = "%a, \n%d") +
+  theme(axis.text.x = element_text(angle = 0,
+                                   vjust = 1,
+                                   hjust = 0.5),
+        plot.title = element_text(face = "bold")) +
+  labs (x = "Date", y = "Tweet Count",
+        title = "#disruptJMM Tweets During JMM (2021)",
+        subtitle = "JMM 2021: Jan. 6th - 9th",
+        caption = "\nSource: Twitter's API via academictwitteR")
+
+## View plot
+plot_timeSeriesDay2021
+########################################################
+
+####################### - Top DisruptJMM Tweeters #######################
+
+## Plot the top #disruptJMM Tweeters in the dataset
+plot_topTweeters <- twitterData_tidy %>% 
+  select(user_username) %>% 
+  group_by(user_username) %>% 
+  summarize(n=n()) %>%
+  arrange(desc(n)) %>% 
+  top_n(8, n) %>% 
+  ggplot(aes(x = reorder(user_username, - n), y = n)) +
+  theme_classic() +
+  scale_fill_grey(start = 0.25, end = 2.75) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 335,
+                                   vjust = 0.5,
+                                   hjust = 0.5),
+        plot.title = element_text(face = "bold")) +
+  labs (x = "Username", y = "Tweet Count",
+        title = "Top #disruptJMM Tweeters",
+        subtitle = "2020 - 2021",
+        caption = "\nSource: Twitter's API via academictwitteR")
+
+## View plot
+plot_topTweeters
+########################################################################
+
+####################### Save Dave Visualizations #######################
+## Create a folder for data visualizations
+dir.create("visualizations")
+
+## Save plot as a png file
+ggsave(filename = "plot_timeSeriesMonth.png",
+       plot = plot_timeSeriesMonth,
+       path = "visualizations/")
+
+## Save plot as a png file
+ggsave(filename = "plot_timeSeriesDay2020.png",
+       plot = plot_timeSeriesDay2020,
+       path = "visualizations/")
+
+## Save plot as a png file
+ggsave(filename = "plot_timeSeriesDay2021.png",
+       plot = plot_timeSeriesDay2021,
+       path = "visualizations/")
+
+## Save plot as a png file
+ggsave(filename = "plot_topTweeters.png",
+       plot = plot_topTweeters,
+       path = "visualizations/")
