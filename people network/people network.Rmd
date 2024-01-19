@@ -126,6 +126,26 @@ btwn.peeps[ind][1:10]
 
 ``` 
 
+# What are important peeps tweeting about?
+```{r}
+#I think outdeg is what we want? But easy enough to tweak
+influencer_names = names(outdeg.peeps[ind][1:10])
+print(influencer_names)
+influencers <- filter(mt_edgelist, Sender %in% influencer_names)
+n=nrow(influencers)
+codes <- colnames(influencers)[11:45]
+print(codes)
+influencer_tweets <- c()
+for (code in codes) {
+  #print(code)
+  #print(length(which(influencers[code] == "True")))
+  influencer_tweets <- append(influencer_tweets, length(which(influencers[code]=="True"))/n)
+}
+names(influencer_tweets) <- codes
+influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
+print(influencer_tweets)
+```
+
 # Active Tweeters
 What were active tweeters doing. If you didn't just RT things other people wrote. What were you talking about?
 ```{r}
@@ -170,6 +190,8 @@ dev.off()
 ```
 
 From this it seems like there are several people who are very well connected to each other (e.g. JointMath, pwr2dppl). Then there are people who are recruiting participation from outside the large interior cluster, engaging new networks (e.g. WanderingPoint, RG1gal, mathprofcarrie).  Is this how this plays out in the modularity clusters?
+
+
 
 # Modularity
 ```{r}
