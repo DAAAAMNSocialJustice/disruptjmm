@@ -81,7 +81,8 @@ indeg.peeps <- degree(mathpeeps.g,  mode = "in",
   normalized = FALSE)
 names(indeg.peeps) <- V(mathpeeps.g)$name
 ind <- order(-indeg.peeps)
-indeg.peeps[ind][1:10]
+top_indeg_peeps <- indeg.peeps[ind][1:10]
+print(top_indeg_peeps)
 
 #Out degree of top 10 in order
 outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
@@ -89,8 +90,8 @@ outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
   normalized = FALSE)
 names(outdeg.peeps) <- V(mathpeeps.g)$name
 ind <- order(-outdeg.peeps)
-outdeg.peeps[ind][1:10]
-
+top_outdeg_peeps <- outdeg.peeps[ind][1:10]
+print(top_outdeg_peeps)
 ```
 
 The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
@@ -129,16 +130,13 @@ btwn.peeps[ind][1:10]
 # What are important peeps tweeting about?
 ```{r}
 #I think outdeg is what we want? But easy enough to tweak
-influencer_names = names(outdeg.peeps[ind][1:10])
+influencer_names = names(top_outdeg_peeps)
 print(influencer_names)
 influencers <- filter(mt_edgelist, Sender %in% influencer_names)
 n=nrow(influencers)
 codes <- colnames(influencers)[11:45]
-print(codes)
 influencer_tweets <- c()
 for (code in codes) {
-  #print(code)
-  #print(length(which(influencers[code] == "True")))
   influencer_tweets <- append(influencer_tweets, length(which(influencers[code]=="True"))/n)
 }
 names(influencer_tweets) <- codes
@@ -146,6 +144,21 @@ influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
 print(influencer_tweets)
 ```
 
+```{r}
+#Repeat for in degree
+influencer_names = names(top_indeg_peeps)
+print(influencer_names)
+influencers <- filter(mt_edgelist, Sender %in% influencer_names)
+n=nrow(influencers)
+codes <- colnames(influencers)[11:45]
+influencer_tweets <- c()
+for (code in codes) {
+  influencer_tweets <- append(influencer_tweets, length(which(influencers[code]=="True"))/n)
+}
+names(influencer_tweets) <- codes
+influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
+print(influencer_tweets)
+```
 # Active Tweeters
 What were active tweeters doing. If you didn't just RT things other people wrote. What were you talking about?
 ```{r}
