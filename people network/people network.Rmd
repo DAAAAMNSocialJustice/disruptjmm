@@ -159,6 +159,22 @@ names(influencer_tweets) <- codes
 influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
 print(influencer_tweets)
 ```
+
+```{r}
+#What was @JointMath tweeting about?
+jointmath <- filter(mt_edgelist, Sender == "JointMath")
+n=nrow(jointmath)
+codes <- colnames(jointmath)[11:45]
+joint_tweets <- c()
+for (code in codes) {
+  joint_tweets <- append(joint_tweets, length(which(jointmath[code]=="True"))/n)
+}
+names(joint_tweets) <- codes
+joint_tweets <- sort(joint_tweets,decreasing=TRUE)
+print(joint_tweets)
+print(n)
+```
+
 # Active Tweeters
 What were active tweeters doing. If you didn't just RT things other people wrote. What were you talking about?
 ```{r}
