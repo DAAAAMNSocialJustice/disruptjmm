@@ -182,7 +182,9 @@ important_codes <- c("representation","gender","indigenous","advocacy","power","
 for (code in important_codes){
   code_only <- filter(mt_edgelist, (!!as.symbol(code))=="True")
   print(code)
-  print(sort(table(code_only$Sender),decreasing=TRUE))
+  top_tweeters=sort(table(code_only$Sender),decreasing=TRUE)
+  #print(head(top_tweeters,10))
+  barplot(head(top_tweeters,10),las=2)
 }
 
 
