@@ -175,6 +175,20 @@ print(joint_tweets)
 print(n)
 ```
 
+# Who is tweeting about important things?
+```{r}
+important_codes <- c("representation","gender","indigenous","advocacy","power","bipoc")
+
+for (code in important_codes){
+  code_only <- filter(mt_edgelist, (!!as.symbol(code))=="True")
+  print(code)
+  print(sort(table(code_only$Sender),decreasing=TRUE))
+}
+
+
+
+```
+
 # Active Tweeters
 What were active tweeters doing. If you didn't just RT things other people wrote. What were you talking about?
 ```{r}
