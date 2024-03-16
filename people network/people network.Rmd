@@ -73,7 +73,7 @@ deg.peeps <- degree(mathpeeps.g,  mode = "all",
   normalized = FALSE)
 names(deg.peeps) <- V(mathpeeps.g)$name
 ind <- order(-deg.peeps)
-deg.peeps[ind][1:10]
+deg.peeps[ind][1:5]
 
 #Degree of top 10 in order
 indeg.peeps <- degree(mathpeeps.g,  mode = "in",
@@ -81,7 +81,7 @@ indeg.peeps <- degree(mathpeeps.g,  mode = "in",
   normalized = FALSE)
 names(indeg.peeps) <- V(mathpeeps.g)$name
 ind <- order(-indeg.peeps)
-top_indeg_peeps <- indeg.peeps[ind][1:10]
+top_indeg_peeps <- indeg.peeps[ind][1:5]
 print(top_indeg_peeps)
 
 #Out degree of top 10 in order
@@ -90,7 +90,7 @@ outdeg.peeps <- degree(mathpeeps.g,  mode = "out",
   normalized = FALSE)
 names(outdeg.peeps) <- V(mathpeeps.g)$name
 ind <- order(-outdeg.peeps)
-top_outdeg_peeps <- outdeg.peeps[ind][1:10]
+top_outdeg_peeps <- outdeg.peeps[ind][1:5]
 print(top_outdeg_peeps)
 ```
 
@@ -142,6 +142,7 @@ for (code in codes) {
 names(influencer_tweets) <- codes
 influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
 print(influencer_tweets)
+print(n)
 ```
 
 ```{r}
@@ -158,6 +159,7 @@ for (code in codes) {
 names(influencer_tweets) <- codes
 influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
 print(influencer_tweets)
+print(n)
 ```
 
 ```{r}
