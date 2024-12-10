@@ -135,7 +135,7 @@ btwn.peeps[ind][1:10]
 influencer_names = c("WanderingPoint","mathprofcarrie","sbagley","pwr2dppl","RG1gal","JointMath","LoboWithACause","VictorPiercey1")
 #influencers <- filter(mt_edgelist, Sender %in% influencer_names)
 
-codes <- colnames(mt_edgelist)[11:45]
+codes <- colnames(mt_edgelist)[12:46]
 
 for (person in influencer_names) {
   influencers <- filter(mt_edgelist, Sender == person)
