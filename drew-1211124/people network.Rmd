@@ -7,12 +7,14 @@ output:
 ```{r}
 library(igraph)
 library(tidyverse)
+library(questionr)
 ```
 
 ### Read data file
 ```{r}
 #read file in as members
 mt_edgelist <- read.csv("../data cleaning/all-data.csv")
+
 View(mt_edgelist)
 head(mt_edgelist)
 ```
@@ -69,7 +71,36 @@ print(knitr::kable(influencer_tweets))
 cat("\n\n")
 }
 ```
+# What are our netweavers tweeting about?
+```{r}
+influencer_names = c("mathprofcarrie","JointMath","pwr2dppl","LoboWithACause","sbagley")
+#influencers <- filter(mt_edgelist, user_username %in% influencer_names)
 
+codes <- colnames(mt_edgelist)[54:88]
+
+for (person in influencer_names) {
+  influencers <- filter(mt_edgelist, user_username == person)
+  #Drop retweets
+  #influencersOTQT <- filter(influencers, sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+  
+  n=nrow(influencers)
+  influencer_tweets <- c()
+  cnames <- c()
+  for (code in codes) {
+    freq=length(which(influencers[code]=="True"))/n
+    if (freq>0){ 
+      influencer_tweets <- append(influencer_tweets,freq)
+      cnames <- append(cnames,code)}
+  }
+
+names(influencer_tweets) <- cnames
+influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
+print(person)
+print(n)
+print(knitr::kable(influencer_tweets))
+cat("\n\n")
+}
+```
 
 
 ```{r}
@@ -89,18 +120,41 @@ print(n)
 
 # Who is tweeting about important things?
 ```{r}
-important_codes <- c("representation","gender","indigenous","advocacy","power","bipoc")
-
-for (code in important_codes){
-  code_only <- filter(mt_edgelist, (!!as.symbol(code))=="True")
-  print(code)
-  top_tweeters=sort(table(code_only$user_username),decreasing=TRUE)
+#important_codes <- c("representation","gender","indigenous","advocacy","power","bipoc")
+#
+#for (code in important_codes){
+#  code_only <- filter(mt_edgelist, (!!as.symbol(code))=="True")
+#  print(code)
+#  top_tweeters=sort(table(code_only$user_username),decreasing=TRUE)
   #print(head(top_tweeters,10))
-  barplot(head(top_tweeters,10),las=2)
-}
-
-
+#  barplot(head(top_tweeters,10),las=2)
+#}
 
 ```
 
+# Who is tweeting about SJEDI and CC in Math?
+```{r}
+themes=c("SJEDI","Creating.change.in.math", "Building.community", "Broadening.the.counterpublic", "Self.organization")
+for (theme in themes){
+print(theme)
+code_only <- filter(filter(mt_edgelist, (!!as.symbol(theme))==1), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+top_tweeters=sort(wtd.table(x=code_only$user_username, weights=1+code_only$retweet_count+code_only$quote_count),decreasing=TRUE)
+barplot(head(top_tweeters,10),las=2)
+}
+```
 
+# Can we do code level too?
+
+```{r}
+codes <- colnames(mt_edgelist)[54:88]
+for (code in codes){
+print(code)
+#code_only <- filter(filter(mt_edgelist, (!!as.symbol(code))==1), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+#code_only <- filter(mt_edgelist,(!!as.symbol(code))=="True")
+code_only <- filter(filter(mt_edgelist, (!!as.symbol(code))=="True"), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+#code_only <-mt_edgelist[mt_edgelist$(!!as.symbol(code))]==TRUE
+top_tweeters=sort(wtd.table(x=code_only$user_username, weights=1+code_only$retweet_count+code_only$quote_count),decreasing=TRUE)
+#print(head(top_tweeters,10))
+barplot(head(top_tweeters,5),las=2)
+}
+```
