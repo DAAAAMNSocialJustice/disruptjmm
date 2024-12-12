@@ -1,0 +1,109 @@
+---
+title: "people codes"
+author: "CDE"
+date: "2024-12-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+
+# Clustering Analysis of user - code network
+
+This is an alternative to the TDA clustering method
+This is not the same as the code hypergraph, which loses user data
+
+## Libraries and other set up
+```{r}
+library("igraph")
+#install.packages(c("graphsim", "leiden"))
+library("graphsim")
+library("leiden")
+library("RColorBrewer")
+
+```
+
+
+## Import user - code adjacency matrix
+
+```{r}
+user_code.df <- read.csv("~/GitHub/disruptjmm/data cleaning/df_codes_adjacencymatrix.csv", row.names=1)
+View(user_code.df)
+```
+
+## Unimodal analysis by code
+
+### new interaction matrix
+```{r}
+user_code.mat <- as.matrix(user_code.df)
+user_user.mat <- user_code.mat %*% t(user_code.mat)
+```
+
+### user graph object
+```{r}
+user.g <- graph_from_adjacency_matrix(as.matrix(user_user.mat), mode = c("undirected"))
+user.g
+```
+### Clustering
+```{r}
+# This took too long to run for full, so aborted - quadratic complexity
+#user.ceb<-cluster_edge_betweenness(user.g)
+#membership(user.ceb)
+```
+
+
+```{r}
+# Walktrap
+wtc<-cluster_walktrap(user.g)
+user_wtc_mem<-membership(wtc)
+modularity(user.g, user_wtc_mem)
+```
+```{r}
+# Spinglass
+csg<-cluster_spinglass(user.g)
+user_csg_mem<-membership(csg)
+modularity(user.g, user_csg_mem)
+```
+```{r}
+
+```
+
+```{r}
+#Greedy
+cfg<-cluster_fast_greedy(simplify(user.g))
+user_cfg_mem<-membership(cfg)
+user_cfg_mem
+modularity(user.g, user_cfg_mem)
+```
+
+### Plotting
+```{r, echo=FALSE}
+png(file="cluster_user.png",width=1600, height=1600)
+plot(wtc, user.g, vertex.label=V(user.g)$name, vertex.label.degree=-pi/2, vertex.label.cex= 0.8,  vertex.label.dist = 1.5, vertex.label.font=2, vertex.size= 8, edge.arrow.size = 0.3, layout=layout_with_fr)
+dev.off()
+```
+
+
+## Bipartite analysis
+Following this tutorial
+https://cran.r-project.org/web/packages/leiden/vignettes/run_bipartite.html
+
+### As bipartite graph object
+
+```{r}
+bipart.g <- graph_from_biadjacency_matrix(user_code_matrix)
+bipart.g
+```
+## Partition algorithm
+```{r}
+#partition <- leiden(bipart.g, partition_type = "CPMVertexPartition.Bipartite", resolution_parameter = 0.005)
+#table(partition)
+```
+
