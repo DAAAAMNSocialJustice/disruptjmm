@@ -82,7 +82,8 @@ top_people = data.frame( name= c("WanderingPoint","mathprofcarrie","sbagley","pw
 #influencers <- filter(mt_edgelist, user_username %in% influencer_names)
 print(top_people)
 
-codes <- c("representation","lbgtq","bipoc","gender","indigenous","power","advocacy","learning","economic","SJEDI.impact","humanize","jmm.experience","math.experience","futures","math.practice","current.events","allyship.in.math","CC.impact")
+codes <- c("representation","lbgtq","bipoc","gender","indigenous","power","advocacy","learning","economic","SJEDI.impact")
+#,"humanize","jmm.experience","math.experience","futures","math.practice","current.events","allyship.in.math","CC.impact")
 
 for (code in codes) {
   column = c()
@@ -122,7 +123,56 @@ top_people %>%
       #axis.ticks.x=element_blank()
         ) +
         #strip.text       = element_text(face = "bold", size = 12)) +
-  labs(x = "Codes")
+  labs(x = "Codes in SJEDI Theme",y="Frequency")
+
+```
+```{r}
+top_people = data.frame( name= c("WanderingPoint","mathprofcarrie","sbagley","pwr2dppl","LoboWithACause","VictorPiercey1"))
+#influencers <- filter(mt_edgelist, user_username %in% influencer_names)
+print(top_people)
+
+#codes <- c("representation","lbgtq","bipoc","gender","indigenous","power","advocacy","learning","economic","SJEDI.impact")
+codes <- c("humanize","jmm.experience","math.experience","futures","math.practice","current.events","allyship.in.math","CC.impact")
+
+for (code in codes) {
+  column = c()
+  for (person in top_people$name){
+   influencers <- filter(filter(mt_edgelist, user_username == person), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+  #Drop retweets
+#   influencersOTQT <- filter(influencers, sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+  
+  n=nrow(influencers)
+  freq=length(which(influencers[[code]]=="True"))/n
+  column <- append(column,freq)
+  }
+
+  top_people[[code]] <- column
+}
+ 
+#num=c() 
+#for (person in top_people$name){
+#   num <- append(num, nrow(filter(filter(mt_edgelist, user_username == person), sourcetweet_type == "quoted" | is.na(sourcetweet_type))))
+#}
+#top_people$n <- num
+
+#print(top_people)
+
+
+top_people %>% 
+  pivot_longer(cols = codes, names_to="code") %>%
+  ggplot(aes(code, value, fill = name)) +
+  geom_col(position = position_dodge(), color = "black") +
+  #scale_alpha_manual(values = c(0.5, 1), guide = guide_none()) +
+  facet_grid(~code, scales = "free_x", switch = "x") +
+  theme(strip.placement  = "outside",
+        panel.spacing    = unit(0, "points"),
+        strip.background = element_blank(),
+        axis.text.x=element_blank(), 
+        strip.text.x = element_text(angle = 90)
+      #axis.ticks.x=element_blank()
+        ) +
+        #strip.text       = element_text(face = "bold", size = 12)) +
+  labs(x = "Codes in Creating Change Theme",y="Frequency")
 
 ```
 
