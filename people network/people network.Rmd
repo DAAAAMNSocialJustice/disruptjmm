@@ -92,6 +92,22 @@ names(outdeg.peeps) <- V(mathpeeps.g)$name
 ind <- order(-outdeg.peeps)
 top_outdeg_peeps <- outdeg.peeps[ind][1:10]
 print(top_outdeg_peeps)
+
+
+#Get indeg rank + outdeg rank
+people <- data.frame(deg.peeps)
+people$totalrank[order(-people$deg.peeps)] <- 1:nrow(people)
+people$indeg <- degree(mathpeeps.g,  mode = "in",
+  loops = FALSE,
+  normalized = FALSE)
+people$outdeg <- degree(mathpeeps.g,  mode = "out",
+  loops = FALSE,
+  normalized = FALSE)
+people$inrank[order(people$indeg,decreasing=TRUE)] <- 1:nrow(people)
+people$outrank[order(people$outdeg,decreasing=TRUE)] <- 1:nrow(people)
+people$ranksum <- people$inrank+people$outrank
+people$ranksumrank[order(people$ranksum)] <- 1:nrow(people)
+print(people[order(people$ranksumrank), ])
 ```
 
 The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
