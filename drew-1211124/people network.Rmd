@@ -20,7 +20,11 @@ head(mt_edgelist)
 ```
 Note: the sender is in the first column and receiver in the second
 
+```{r}
+people <- filter(mt_edgelist, sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+print(unique(people$user_username))
 
+```
 
 
 ```{r}
@@ -71,6 +75,57 @@ print(knitr::kable(influencer_tweets))
 cat("\n\n")
 }
 ```
+
+# Distribution of SJEDI and CC Math codes for top tweeters
+```{r}
+top_people = data.frame( name= c("WanderingPoint","mathprofcarrie","sbagley","pwr2dppl","LoboWithACause","VictorPiercey1"))
+#influencers <- filter(mt_edgelist, user_username %in% influencer_names)
+print(top_people)
+
+codes <- c("representation","lbgtq","bipoc","gender","indigenous","power","advocacy","learning","economic","SJEDI.impact","humanize","jmm.experience","math.experience","futures","math.practice","current.events","allyship.in.math","CC.impact")
+
+for (code in codes) {
+  column = c()
+  for (person in top_people$name){
+   influencers <- filter(filter(mt_edgelist, user_username == person), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+  #Drop retweets
+#   influencersOTQT <- filter(influencers, sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+  
+  n=nrow(influencers)
+  freq=length(which(influencers[[code]]=="True"))/n
+  column <- append(column,freq)
+  }
+
+  top_people[[code]] <- column
+}
+ 
+#num=c() 
+#for (person in top_people$name){
+#   num <- append(num, nrow(filter(filter(mt_edgelist, user_username == person), sourcetweet_type == "quoted" | is.na(sourcetweet_type))))
+#}
+#top_people$n <- num
+
+#print(top_people)
+
+
+top_people %>% 
+  pivot_longer(cols = codes, names_to="code") %>%
+  ggplot(aes(code, value, fill = name)) +
+  geom_col(position = position_dodge(), color = "black") +
+  #scale_alpha_manual(values = c(0.5, 1), guide = guide_none()) +
+  facet_grid(~code, scales = "free_x", switch = "x") +
+  theme(strip.placement  = "outside",
+        panel.spacing    = unit(0, "points"),
+        strip.background = element_blank(),
+        axis.text.x=element_blank(), 
+        strip.text.x = element_text(angle = 90)
+      #axis.ticks.x=element_blank()
+        ) +
+        #strip.text       = element_text(face = "bold", size = 12)) +
+  labs(x = "Codes")
+
+```
+
 # What are our netweavers tweeting about?
 ```{r}
 influencer_names = c("mathprofcarrie","JointMath","pwr2dppl","LoboWithACause","sbagley")
@@ -142,6 +197,17 @@ top_tweeters=sort(wtd.table(x=code_only$user_username, weights=1+code_only$retwe
 barplot(head(top_tweeters,10),las=2)
 }
 ```
+# Who is tweeting about SJEDI and CC in Math? unweighted version
+```{r}
+themes=c("SJEDI","Creating.change.in.math", "Building.community", "Broadening.the.counterpublic", "Self.organization")
+for (theme in themes){
+print(theme)
+code_only <- filter(filter(mt_edgelist, (!!as.symbol(theme))==1), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
+#top_tweeters=sort(wtd.table(x=code_only$user_username, weights=1+code_only$retweet_count+code_only$quote_count),decreasing=TRUE)
+ top_tweeters=sort(table(code_only$user_username),decreasing=TRUE)
+barplot(head(top_tweeters,10),las=2)
+}
+```
 
 # Can we do code level too?
 
@@ -149,12 +215,14 @@ barplot(head(top_tweeters,10),las=2)
 codes <- colnames(mt_edgelist)[54:88]
 for (code in codes){
 print(code)
-#code_only <- filter(filter(mt_edgelist, (!!as.symbol(code))==1), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
-#code_only <- filter(mt_edgelist,(!!as.symbol(code))=="True")
 code_only <- filter(filter(mt_edgelist, (!!as.symbol(code))=="True"), sourcetweet_type == "quoted" | is.na(sourcetweet_type))
-#code_only <-mt_edgelist[mt_edgelist$(!!as.symbol(code))]==TRUE
-top_tweeters=sort(wtd.table(x=code_only$user_username, weights=1+code_only$retweet_count+code_only$quote_count),decreasing=TRUE)
-#print(head(top_tweeters,10))
+
+#Weighted
+#top_tweeters=sort(wtd.table(x=code_only$user_username, weights=1+code_only$retweet_count+code_only$quote_count),decreasing=TRUE)
+
+#Unweighted
+top_tweeters=sort(table(code_only$user_username),decreasing=TRUE)
+
 barplot(head(top_tweeters,5),las=2)
 }
 ```
