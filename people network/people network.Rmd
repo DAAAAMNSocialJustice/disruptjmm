@@ -110,9 +110,9 @@ people$ranksumrank[order(people$ranksum)] <- 1:nrow(people)
 print(people[order(people$ranksumrank), ])
 ```
 
-The high degree of RG1gal comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
+The high degree of user112(RG1gal) comes from people mentioning her, which makes sense - one of the most frequently used codes was around humanizing & so she was tagged/replied to multiple times [38], but only tweeted 2x.
 
-Interesting that JointMath has the second highest Twitter outdegree. Do they autoretweet everything that they are tagged in?
+Interesting that user10(JointMath) has the second highest Twitter outdegree. Do they autoretweet everything that they are tagged in?
 ```{r}
 #Careful, this overcounts!  The 'text' field is truncated for retweets, need to load
 #new data file that includes sourcetweet_text field
@@ -120,7 +120,7 @@ JointMath<-mt_edgelist[mt_edgelist$Sender == 'JointMath',]
 #did not use any of the hashtags or did not include a @JointMath tag
 NotHT20<-subset(JointMath, !grepl("#JMM2020", JointMath$sourcetweet_text ), )
 NotHT<-subset(NotHT20, !grepl("#JMM2021", NotHT20$sourcetweet_text ), )
-Notpinged<-subset(NotHT, !grepl("@JointMath", NotHT$sourcetweet_text ))
+Notpinged<-subset(NotHT, !grepl("user10", NotHT$sourcetweet_text ))
 
 # for example - this has nothing that says RT me...
 Notpinged$text[12]
@@ -148,8 +148,9 @@ btwn.peeps[ind][1:10]
 
 # What are our top group tweeting about?
 ```{r}
-influencer_names = c("WanderingPoint","mathprofcarrie","sbagley","pwr2dppl","RG1gal","JointMath","LoboWithACause","VictorPiercey1")
-#influencers <- filter(mt_edgelist, Sender %in% influencer_names)
+#influencer_names = c("WanderingPoint","mathprofcarrie","sbagley","pwr2dppl","RG1gal","JointMath","LoboWithACause","VictorPiercey1")
+influencer_names = c("user172","user266","user75","user36","user112","user10","user102","user76")
+
 
 codes <- colnames(mt_edgelist)[12:46]
 
@@ -161,12 +162,13 @@ for (person in influencer_names) {
   cnames <- c()
   for (code in codes) {
     freq=length(which(influencers[code]=="True"))/n
-    if (freq>0){ 
+    #print(freq)
+    if (!(is.nan(freq)) && freq>0){ 
       influencer_tweets <- append(influencer_tweets,freq)
       cnames <- append(cnames,code)}
   }
 
-names(influencer_tweets) <- cnames
+#names(influencer_tweets) <- cnames
 influencer_tweets <- sort(influencer_tweets,decreasing=TRUE)
 print(person)
 print(n)
