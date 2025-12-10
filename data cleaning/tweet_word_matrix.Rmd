@@ -1,0 +1,507 @@
+---
+title: "Turning tweets into words"
+author: "Carrie Diaz Eaton and Anelise Hanson Shrout"
+date: "2/1/2022"
+output: 
+    html_document: 
+        number_sections: true
+#bibliography: "netref.bib"
+# from: "Checkpoint Week 3: From nursery rhyme to network"
+---
+# Overview of Checkpoint
+We are going to spend some time exploring how to define defining word connections for creating a textual network.
+
+## Discussion Questions
+
+1.  What does it mean to think about words as connected in a network? How/Why might words be connected to each other?
+
+2.  How might you tell a computer to identify "important" words? How would you define important or not-important for a computer?
+
+3.  How might connections between words tell us how ideas might be connected?
+
+4.  What are LLMs? Why are textual relationships and the assumptions behind them important for understanding LLMs?
+
+## Learning Outcomes
+In this checkpoint, we will:  
+
+* Implement automatic install and load package checks by using word vectors.
+* Use the 'pdftools' package to scrape text from pdf documents.
+* Plan how to represent text in networks appropriate to the context at hand.
+* Use the 'stringr' package to clean scraped text in order to create the desired edge list.
+* Analyze the text through some basic summary statistics.
+
+## Relevant Documentation of new functions used in this lab
+Some functions that you'll need to know for Checkpoint 4 and Lab 4:
+
+-   [pdf_text()](https://www.rdocumentation.org/packages/Rpoppler/versions/0.1-0/topics/PDF_text)
+-   [str_replace_all()](https://www.rdocumentation.org/packages/stringr/versions/0.6.2/topics/str_replace_all)
+-   [tolower()](https://stat.ethz.ch/R-manual/R-devel/library/base/html/chartr.html)
+-   [trimws()](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/trimws)
+-   [strsplit()](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/strsplit)
+- Regular expressions [Regex Cheat Sheet](https://www.rexegg.com/regex-quickstart.html)
+
+# Mis en Place
+
+## Set working directory
+```{r}
+#set working directory
+ setwd("C:/Users/cdeaton/Documents/GitHub/disruptjmm/data cleaning")
+```
+
+
+## Checking and Installing Packages
+We are going to start by identifying any packages needed for our analysis. In order to avoid any unnecessary re-installation or loading, we are going to set up a way to automatically check and then load only what we need.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Store string containing all required packages
+my_packages <- c('pdftools', 'stringr', 'stopwords', 'igraph')
+
+```
+
+Figure out which of these packages is already installed
+``` {r}
+# Store all installed packages
+ya_installed <- library()$results[,1]
+
+# Check whether required packages are already installed and grab only those that still need installation
+need_install<-my_packages[!(my_packages %in% ya_installed)]
+
+#install required packages
+lapply(need_install, install.packages, character.only = TRUE)
+
+```
+
+Now, load only unloaded packages
+``` {r}
+# Store all installed packages
+ya_loaded <- (.packages())
+
+# Check whether required packages are already installed and grab only those that still need installation
+need_load<-my_packages[!(my_packages %in% ya_loaded)]
+
+# Load required packages
+lapply(need_load, require, character.only = TRUE)
+```
+
+# #DisruptJMM
+
+## Plan the network
+
+**Discuss:**  
+* What do you notice about the word relationships?  
+* How should we define an edgelist for MHALL?  
+
+## Scrape MHALL text from pdfs
+We will use pdf tools to "read in" the pdf file.
+
+``` {r}
+# Import tweet file
+d_tweets.df <- read.csv("~/GitHub/disruptjmm/data cleaning/text of tweets.csv", row.names=1, comment.char="#")
+View(id_tweets.df)
+```
+
+Now we isolate just the part of the data frame that holds MHALL.
+
+```{r}
+# Each page of pdf is one row
+# Extracting desired row(s)/page(s)
+# Mary Had a Little Lamb is on page 5
+mhall <- text_df[5,]
+```
+
+**Always a good idea to peek inside 'mhall' and make sure it did what you intended.**  
+
+``` {r}
+# Convert desired row(s)/page(s) to character string
+mhall <- as.character(mhall)
+```
+
+## Clean data
+
+Look at the in 'mhall' - what kinds of things to we want to remove?
+
+The syntax for removal is: 'str_replace_all(string, pattern, replacement)'. In the RStudio IDE, you can click on the function word and hit F1, and it brings up the help documentation which has some nice examples.
+
+We will go ahead and make several substitutions and replacements. Order does matter here, so make a list, then execute that list.
+
+### Removing line breaks
+```{r}
+# Replace all instances of "\n" (newline) with a space - use escape characters
+# You have to add a space otherwise words will run together
+mhall <- str_replace_all(mhall, "\\\n", " ")
+```
+
+### Completely delete a phrase or line
+``` {r}
+# Replace all instances of the title with no space
+mhall <- str_replace_all(mhall, "Sing Out Loud Children’s Songs", "")
+# Replace all instances of the poem title with no space
+mhall <- str_replace_all(mhall, "LYRICS:  MARY HAD A LITTLE LAMB", "")
+```
+
+### Delete all punctuation
+
+Because we are going to look at 2 grams, we are going to remove all punctuation.  
+
+``` {r}
+#Replace punctuation with no space
+
+# Delete all quotation marks - these are left and right quotation marks
+mhall <- str_replace_all(mhall, "“", "")
+mhall <- str_replace_all(mhall, "”", "")
+
+# Delete all commas
+mhall <- str_replace_all(mhall, ",", "")
+```
+
+Finally, we clean up redundant spaces
+``` {r}
+# Replace multiple spaces with one space
+# s+ means 1 or more spaces.  \\ are escape characters
+mhall <- str_replace_all(mhall, "\\s+", " ")
+```
+
+Check to make sure there isn't anything else that needs removing, such as numbers.
+
+``` {r}
+# Delete spaces at the start and end of our text
+mhall<-trimws(mhall, "both")
+```
+
+
+### Cleaning for an effective network graph
+
+We now want to make sure that our words will be recognized as the same when we construct relationships, so we have to converting everything to lowercase. Then we will use a for loop to define an edgelist.
+
+``` {r}
+# Convert all text to lowercase
+mhall <- tolower(mhall)
+```
+
+Are there any words that make sense to eliminate in our analysis?
+
+``` {r}
+# Identify stop words
+# stopwords gives us a list of such words
+# otherwise we could manually define these, or even add to this list
+stopwords_regex = paste(stopwords('en'), collapse = '\\b|\\b')
+stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
+mhall <- str_replace_all(mhall, stopwords_regex, '')
+```
+
+
+If we were looking at word/sentence relationships, we may have wanted to keep periods and question marks first to define sentences before breaking up into words. 
+
+``` {r}
+# saving as mhall_d for duple
+# Delete all question marks (use escape characters)
+mhall_d <- str_replace_all(mhall, "\\?", "")
+
+# Delete all periods
+mhall_d <- str_replace_all(mhall_d, "\\.", "")
+
+```
+
+After we look at mhall, we see we need to clean up redundant spaces once again.
+
+``` {r}
+# Replace multiple spaces with one space
+# s+ means 1 or more spaces.  \\ are escape characters
+mhall_d <- str_replace_all(mhall_d, "\\s+", " ")
+```
+
+How does this look so far?  Peek inside mhall_d.
+
+## Convert text to edgelist based on words next to each other 
+We will create a network based on next word neighbors. To define an edgelist based on 2 grams, we need to break this into a list of words first.
+
+### Get a vector of words
+We now have one list of words in a 1x1 matrix. We need to convert that to a vector with one word in each slot.
+
+``` {r}
+# Remember that strsplit returns a list of lists
+mhall_ls<- str_split(mhall_d, " ")
+```
+
+I recommend viewing 'mhall_ls' to get a sense of how the list looks.  
+
+``` {r}
+# Grab just the vector
+mhall_vec<- mhall_ls[[1]]
+```
+
+Now look at `mhall_vec` again. How do you remove the "" entries? 
+
+``` {r}
+# Grab just the vector without ""
+# First mhall_vec %in% "" finds where they do match
+# Then keep just the ones that don't match
+mhall_vec<-mhall_vec[! (mhall_vec %in% "")]
+```
+
+### Convert the vector of consectutive words into an edgelist
+
+Now we have to think through this a little. Words are connected both to the one before and the one after. 
+
+####Answer:
+* What should the edgelist be for the 1-line poem represented by c("mary", "little", "lamb")?
+* What do you notice? How could you make an algorithm?
+
+``` {r}
+# Create an empty dataframe to hold each edgelist row
+# It should have 2 columns and 1 row
+# A for-loop will overwrite this for each loop
+el_row <- as.data.frame(matrix(ncol = 2, nrow = 1))
+
+mhall_el <- as.data.frame(matrix(ncol = 2, nrow = 1))
+# Specify column names
+colnames(mhall_el) <- c('word', 'next')
+```
+
+As we write the for loop to create el, how many iterations will we need?
+
+``` {r}
+# Write a for loop that, on each loop over the list of all words:
+## Stores the current word in a variable word_1
+## Stores the next word in a variable word_2
+## Stores word_1 in the word_1 column of the one-row dataframe
+## Stores word_2 in the word_2 column of the one-row dataframe
+## Binds the (re-writable) dataframe to the (now not empty) dataframe
+
+mhall_el[1,] <- c(mhall_vec[1], mhall_vec[2])
+
+for (i in 2:(length(mhall_vec)-1)) {
+  el_row <- c(mhall_vec[i], mhall_vec[i+1])
+  mhall_el <-rbind(mhall_el, el_row)
+}
+```
+
+Look at our edge list to make sure it is correct. What size should it be? What should the first few entries be?  
+
+``` {r}
+# Convert our edge list to the R data type matrix
+mhall_el_mat <-as.matrix(mhall_el)
+```
+
+### Declare the graph object
+
+Now that we have our edgelist, we can create our graph object!!!  
+
+Should this be directed or undirected?
+``` {r}
+# Create a network graph object
+mhall.g <- graph_from_edgelist(mhall_el_mat, directed =TRUE)
+# use summary to check it out
+summary(mhall.g)
+```
+
+## Insights
+
+### Plot the network
+
+``` {r}
+# Plot the duples network
+plot(mhall.g)
+
+# Don't forget to re-run a couple times.
+```
+
+What can you tell about the rhyme from this picture?  (Hint: Click the button at the top of the figure "Show in new window" to see a better rendering.) 
+
+``` {r}
+# What about a different layout?
+plot(mhall.g, layout = layout_in_circle, edge.arrow.size = 0.2)
+
+```
+
+Which layout conveys a message about the song?  
+
+### Mine network statistics
+
+Complete the five number summary, interpreting after each result:
+```{r, echo = TRUE}
+mhall.g #will print out a summary of the graph object
+```
+From: https://kateto.net/netscix2016.html 
+The description of an igraph object starts with up to four letters:
+
+D or U, for a directed or undirected graph
+N for a named graph (where nodes have a name attribute)
+W for a weighted graph (where edges have a weight attribute)
+B for a bipartite (two-mode) graph (where nodes have a type attribute)
+
+The two numbers that follow (7 5) refer to the number of nodes and edges in the graph. The description also lists node & edge attributes, for example:
+(g/c) - graph-level character attribute
+(v/c) - vertex-level character attribute
+(e/n) - edge-level numeric attribute
+
+So here you can see that there are 32 nodes and 86 edges, it is directed, and vertices have names
+
+```{r, echo = TRUE}
+# size - how large the network is
+vcount(mhall.g) #number of nodes
+gsize(mhall.g) #number of edges - ecount() will do the same
+```
+Agrees with the above summary of the graph
+
+```{r, echo = TRUE}
+# density - how densely connected it is 
+edge_density(mhall.g)
+```
+
+```{r, echo = TRUE}
+# components - whether the network is made up of one or more distinct groups 
+components(mhall.g) #how many connected graphs are there
+```
+There is only 1 component existing fo the full 32 node network
+
+```{r, echo = TRUE}
+# diameter - how compact it is
+diameter(mhall.g)
+```
+
+```{r, echo = TRUE}
+# clustering coefficient - how clustered are the network members
+transitivity(mhall.g)
+```
+
+# Reflect
+
+Reflect on the following to prepare for lab. Write your answers in the Checkpoint for now, but these will be the discussion starters for the Week 3 Lab.
+
+1. What kinds of relationships did you expect to detect through MHALL network analysis and visualization?
+
+2. Did our analysis in class reflect that? Why or why not? How could we have modified that?
+
+3. What questions do you have? What did you learn? How could you apply this to other texts?
+
+4. There are many ways of defining an edge in a text - neighboring words, words in a 3-gram, words in the same sentence, words in the same paragraph, words on the same page and more. How might this change your insights if you applied these other ways to Mary Had a Little Lamb?
+
+5. If you were to instead define an edge between two words as appearing in the same sentence, how would you have to modify that code?
+
+# Optional: Extensions  
+
+## Challenge 1: Algorithmic thinking - Converting manually from edgelists to adjacency matrix
+
+Below is the general outline of how to manually go from an edgelist to an adjacency matrix. Can you fill it in?
+
+Note - there is more than one way to do this manually. If these steps don't make sense, find your own!  You can compare your result with the result of `igraph::get.adjacency()`.
+
+``` {r}
+# Store all unique words in a list
+
+# Store all unique sentence numbers in a list
+```
+
+``` {r}
+# Create a matrix that is populated with 0s, and has the same number of rows as unique words, same number of columns as unique sentences
+```
+
+``` {r}
+# Set the row names of the matrix to unique words
+```
+
+``` {r}
+# Set the column names of the matrix to unique sentence numbers
+```
+
+``` {r}
+# Look at the empty matrix
+```
+
+```{r}
+# Write a for-loop that, on each loop through the edge-list:
+## Stores the word in a variable
+## Stores the sentence number in a variable
+## Determines the index number of the word in the list of all words
+## Determines the index number of the sentence in the list of all sentences
+## Adds one to the cell at the intersection of the word index and sentence index
+```
+
+``` {r}
+# Look at the matrix again
+```
+
+``` {r}
+# Set the adjacency matrix to the R data type Matrix
+```
+
+## Challenge 2: Modify for sentences
+You'll have to go back before we eliminated periods and question marks. I recommend you use a new data frame, like mhalls to distinguish it.
+
+``` {r}
+# Split the string of text into sentences
+
+# Convert sentences to dataframe
+```
+
+``` {r}
+#  Rename sentences column
+```
+
+``` {r}
+# Add a new column containing an index for each sentence
+```
+
+``` {r}
+# Look at our dataframe
+```
+
+### Create the edgelist
+
+``` {r}
+# Create an empty dataframe to hold our edge list
+# It should start with 2 columns and 0 rows
+# A for-loop will add to it
+
+# Specify column names
+```
+
+``` {r}
+# Create an empty dataframe to hold each word/sentence combination
+# It should have 2 columns and 1 row
+# A for-loop will overwrite this for each loop
+
+# Specify column names
+```
+
+``` {r}
+# Write a for loop that, on each loop through the df of sentences:
+## saves the text row of mary_sentences in a variable
+## trims the whitespace from that row
+## saves the sentence number row of mary_sentences in a variable
+## splits the saved text row into words
+## loops AGAIN for each word in the list of words...
+### adds the word to the text column of the new empty dataframe
+### adds the number to the number colum of the new empty dataframe
+### adds the new (now not) empty dataframe to the totally empty dataframe
+
+```
+
+``` {r}
+# View our edge list
+```
+
+``` {r}
+# Get the adjacency matrix (this is bipartite)
+
+# Multiply the matrix by its transpose to make 1D
+```
+
+### Create the graph object and plot
+
+``` {r}
+# Create a graph object
+```
+
+``` {r}
+# Plot the graph object
+```
+
+
+``` {r}
+# Compare plots, with same layout
+```
+
+**Self-check: Have you successfully plotted both versions of the network? How do they compare?**  
