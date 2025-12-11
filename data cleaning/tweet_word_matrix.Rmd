@@ -90,9 +90,9 @@ lapply(need_load, require, character.only = TRUE)
 
 **Discuss:**  
 * What do you notice about the word relationships?  
-* How should we define an edgelist for MHALL?  
+* How should we define an edgelist for tweets?  
 
-## Scrape MHALL text from pdfs
+## Scrape tweets text from pdfs
 We will use pdf tools to "read in" the pdf file.
 
 ``` {r}
@@ -103,7 +103,7 @@ View(id_tweets.df)
 
 ## Clean data
 
-Look at the in 'mhall' - what kinds of things to we want to remove?
+Look at the in 'tweets' - what kinds of things to we want to remove?
 
 The syntax for removal is: 'str_replace_all(string, pattern, replacement)'. In the RStudio IDE, you can click on the function word and hit F1, and it brings up the help documentation which has some nice examples.
 
@@ -113,7 +113,7 @@ We will go ahead and make several substitutions and replacements. Order does mat
 ```{r}
 # Replace all instances of "\n" (newline) with a space - use escape characters
 # You have to add a space otherwise words will run together
-tweets <- as.character(id_tweets.df)
+tweets <- as.character(id_tweets.df$text)
 tweets <- str_replace_all(tweets, "\\\n", " ")
 ```
 
@@ -129,21 +129,27 @@ tweets <- str_replace_all(tweets, "“", "")
 tweets <- str_replace_all(tweets, "”", "")
 
 # Delete all commas
-mhall <- str_replace_all(mhall, ",", "")
+tweets <- str_replace_all(tweets, ",", "")
 ```
 
 Finally, we clean up redundant spaces
 ``` {r}
 # Replace multiple spaces with one space
 # s+ means 1 or more spaces.  \\ are escape characters
-mhall <- str_replace_all(mhall, "\\s+", " ")
+tweets <- str_replace_all(tweets, "\\s+", " ")
 ```
 
 Check to make sure there isn't anything else that needs removing, such as numbers.
+```{r}
+#tweets
+#note that \rt are in there
+tweets <- str_replace_all(tweets, "RT ", "RT")
+```
+
 
 ``` {r}
 # Delete spaces at the start and end of our text
-mhall<-trimws(mhall, "both")
+tweets<-trimws(tweets, "both")
 ```
 
 
@@ -153,7 +159,7 @@ We now want to make sure that our words will be recognized as the same when we c
 
 ``` {r}
 # Convert all text to lowercase
-mhall <- tolower(mhall)
+tweets <- tolower(tweets)
 ```
 
 Are there any words that make sense to eliminate in our analysis?
@@ -164,31 +170,44 @@ Are there any words that make sense to eliminate in our analysis?
 # otherwise we could manually define these, or even add to this list
 stopwords_regex = paste(stopwords('en'), collapse = '\\b|\\b')
 stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
-mhall <- str_replace_all(mhall, stopwords_regex, '')
+tweets <- str_replace_all(tweets, stopwords_regex, '')
 ```
 
 
 If we were looking at word/sentence relationships, we may have wanted to keep periods and question marks first to define sentences before breaking up into words. 
 
 ``` {r}
-# saving as mhall_d for duple
+# saving as tweets_d for duple
 # Delete all question marks (use escape characters)
-mhall_d <- str_replace_all(mhall, "\\?", "")
+tweets <- str_replace_all(tweets, "\\?", "")
 
 # Delete all periods
-mhall_d <- str_replace_all(mhall_d, "\\.", "")
+tweets <- str_replace_all(tweets, "\\.", "")
 
+# Delete all !
+tweets <- str_replace_all(tweets, "\\!", "")
+
+# There was a # nonmen that should be #nonmen
+tweets <- str_replace_all(tweets, "\\# ", "\\#")
+
+# remove ()
+tweets <- str_replace_all(tweets, "\\(", "")
+tweets <- str_replace_all(tweets, "\\)", "")
+
+#remove " & / & \
+tweets <- str_replace_all(tweets, "\\\\", "")
+tweets <- str_replace_all(tweets, "\\/", "")
 ```
 
-After we look at mhall, we see we need to clean up redundant spaces once again.
+After we look at tweets, we see we need to clean up redundant spaces once again.
 
 ``` {r}
 # Replace multiple spaces with one space
 # s+ means 1 or more spaces.  \\ are escape characters
-mhall_d <- str_replace_all(mhall_d, "\\s+", " ")
+tweets <- str_replace_all(tweets, "\\s+", " ")
 ```
 
-How does this look so far?  Peek inside mhall_d.
+How does this look so far?  Peek inside tweets.
 
 ## Convert text to edgelist based on words next to each other 
 We will create a network based on next word neighbors. To define an edgelist based on 2 grams, we need to break this into a list of words first.
@@ -198,23 +217,23 @@ We now have one list of words in a 1x1 matrix. We need to convert that to a vect
 
 ``` {r}
 # Remember that strsplit returns a list of lists
-mhall_ls<- str_split(mhall_d, " ")
+tweets_ls<- str_split(tweets, " ")
 ```
 
-I recommend viewing 'mhall_ls' to get a sense of how the list looks.  
+I recommend viewing 'tweets_ls' to get a sense of how the list looks.  
 
 ``` {r}
 # Grab just the vector
-mhall_vec<- mhall_ls[[1]]
+#tweets_vec<- tweets_ls[1]
 ```
 
-Now look at `mhall_vec` again. How do you remove the "" entries? 
+Now look at `tweets_vec` again. How do you remove the "" entries? 
 
 ``` {r}
 # Grab just the vector without ""
-# First mhall_vec %in% "" finds where they do match
+# First tweets_vec %in% "" finds where they do match
 # Then keep just the ones that don't match
-mhall_vec<-mhall_vec[! (mhall_vec %in% "")]
+#tweets_vec<-tweets_vec[! (tweets_vec %in% "")]
 ```
 
 ### Convert the vector of consectutive words into an edgelist
@@ -222,18 +241,15 @@ mhall_vec<-mhall_vec[! (mhall_vec %in% "")]
 Now we have to think through this a little. Words are connected both to the one before and the one after. 
 
 ####Answer:
-* What should the edgelist be for the 1-line poem represented by c("mary", "little", "lamb")?
-* What do you notice? How could you make an algorithm?
 
 ``` {r}
 # Create an empty dataframe to hold each edgelist row
 # It should have 2 columns and 1 row
 # A for-loop will overwrite this for each loop
-el_row <- as.data.frame(matrix(ncol = 2, nrow = 1))
-
-mhall_el <- as.data.frame(matrix(ncol = 2, nrow = 1))
+tweets_el<- cbind(rep(0,length(tweets_ls[[1]])), tweets_ls[[1]])
+tweets_el <- as.data.frame(tweets_el)
 # Specify column names
-colnames(mhall_el) <- c('word', 'next')
+colnames(tweets_el) <- c('tweet_id', 'word')
 ```
 
 As we write the for loop to create el, how many iterations will we need?
@@ -246,11 +262,10 @@ As we write the for loop to create el, how many iterations will we need?
 ## Stores word_2 in the word_2 column of the one-row dataframe
 ## Binds the (re-writable) dataframe to the (now not empty) dataframe
 
-mhall_el[1,] <- c(mhall_vec[1], mhall_vec[2])
-
-for (i in 2:(length(mhall_vec)-1)) {
-  el_row <- c(mhall_vec[i], mhall_vec[i+1])
-  mhall_el <-rbind(mhall_el, el_row)
+for (i in 2:(length(tweets))) {
+  el_row <- cbind(rep(i-1,length(tweets_ls[[i]])), tweets_ls[[i]])
+  colnames(el_row) <- c('tweet_id', 'word')
+  tweets_el <-rbind(tweets_el, el_row)
 }
 ```
 
@@ -258,7 +273,7 @@ Look at our edge list to make sure it is correct. What size should it be? What s
 
 ``` {r}
 # Convert our edge list to the R data type matrix
-mhall_el_mat <-as.matrix(mhall_el)
+tweets_el_mat <-as.matrix(tweets_el)
 ```
 
 ### Declare the graph object
@@ -268,9 +283,9 @@ Now that we have our edgelist, we can create our graph object!!!
 Should this be directed or undirected?
 ``` {r}
 # Create a network graph object
-mhall.g <- graph_from_edgelist(mhall_el_mat, directed =TRUE)
+tweets.g <- graph_from_edgelist(tweets_el_mat, directed =TRUE)
 # use summary to check it out
-summary(mhall.g)
+summary(tweets.g)
 ```
 
 ## Insights
@@ -279,7 +294,7 @@ summary(mhall.g)
 
 ``` {r}
 # Plot the duples network
-plot(mhall.g)
+plot(tweets.g)
 
 # Don't forget to re-run a couple times.
 ```
@@ -288,7 +303,7 @@ What can you tell about the rhyme from this picture?  (Hint: Click the button at
 
 ``` {r}
 # What about a different layout?
-plot(mhall.g, layout = layout_in_circle, edge.arrow.size = 0.2)
+plot(tweets.g, layout = layout_in_circle, edge.arrow.size = 0.2)
 
 ```
 
@@ -298,7 +313,7 @@ Which layout conveys a message about the song?
 
 Complete the five number summary, interpreting after each result:
 ```{r, echo = TRUE}
-mhall.g #will print out a summary of the graph object
+tweets.g #will print out a summary of the graph object
 ```
 From: https://kateto.net/netscix2016.html 
 The description of an igraph object starts with up to four letters:
@@ -317,37 +332,37 @@ So here you can see that there are 32 nodes and 86 edges, it is directed, and ve
 
 ```{r, echo = TRUE}
 # size - how large the network is
-vcount(mhall.g) #number of nodes
-gsize(mhall.g) #number of edges - ecount() will do the same
+vcount(tweets.g) #number of nodes
+gsize(tweets.g) #number of edges - ecount() will do the same
 ```
 Agrees with the above summary of the graph
 
 ```{r, echo = TRUE}
 # density - how densely connected it is 
-edge_density(mhall.g)
+edge_density(tweets.g)
 ```
 
 ```{r, echo = TRUE}
 # components - whether the network is made up of one or more distinct groups 
-components(mhall.g) #how many connected graphs are there
+components(tweets.g) #how many connected graphs are there
 ```
 There is only 1 component existing fo the full 32 node network
 
 ```{r, echo = TRUE}
 # diameter - how compact it is
-diameter(mhall.g)
+diameter(tweets.g)
 ```
 
 ```{r, echo = TRUE}
 # clustering coefficient - how clustered are the network members
-transitivity(mhall.g)
+transitivity(tweets.g)
 ```
 
 # Reflect
 
 Reflect on the following to prepare for lab. Write your answers in the Checkpoint for now, but these will be the discussion starters for the Week 3 Lab.
 
-1. What kinds of relationships did you expect to detect through MHALL network analysis and visualization?
+1. What kinds of relationships did you expect to detect through tweets network analysis and visualization?
 
 2. Did our analysis in class reflect that? Why or why not? How could we have modified that?
 
@@ -405,7 +420,7 @@ Note - there is more than one way to do this manually. If these steps don't make
 ```
 
 ## Challenge 2: Modify for sentences
-You'll have to go back before we eliminated periods and question marks. I recommend you use a new data frame, like mhalls to distinguish it.
+You'll have to go back before we eliminated periods and question marks. I recommend you use a new data frame, like tweetss to distinguish it.
 
 ``` {r}
 # Split the string of text into sentences
