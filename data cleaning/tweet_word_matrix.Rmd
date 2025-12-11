@@ -111,10 +111,19 @@ We will go ahead and make several substitutions and replacements. Order does mat
 
 ### Removing line breaks
 ```{r}
+tweets <- as.character(id_tweets.df$text)
 # Replace all instances of "\n" (newline) with a space - use escape characters
 # You have to add a space otherwise words will run together
-tweets <- as.character(id_tweets.df$text)
-tweets <- str_replace_all(tweets, "\\\n", " ")
+#tweets <- str_replace_all(tweets, "\\\n", " ")
+```
+
+Check to make sure there isn't anything else that needs removing, such as numbers.
+```{r}
+#tweets
+#note that \rt are in there
+tweets <- str_replace_all(tweets, "RT ", "RT")
+tweets <- str_replace_all(tweets, "\\bhttp\\S*\\b\\s*", "")
+
 ```
 
 ### Delete all punctuation
@@ -127,9 +136,14 @@ Because we are going to look at 2 grams, we are going to remove all punctuation.
 # Delete all quotation marks - these are left and right quotation marks
 tweets <- str_replace_all(tweets, "“", "")
 tweets <- str_replace_all(tweets, "”", "")
+tweets <- str_replace_all(tweets, "\"", "")
+tweets <- str_replace_all(tweets, "\'", "")
+tweets <- str_replace_all(tweets, "’", "")
 
 # Delete all commas
 tweets <- str_replace_all(tweets, ",", "")
+tweets <- str_replace_all(tweets, ";", "")
+tweets <- str_replace_all(tweets, ":", "")
 ```
 
 Finally, we clean up redundant spaces
@@ -139,11 +153,38 @@ Finally, we clean up redundant spaces
 tweets <- str_replace_all(tweets, "\\s+", " ")
 ```
 
-Check to make sure there isn't anything else that needs removing, such as numbers.
-```{r}
-#tweets
-#note that \rt are in there
-tweets <- str_replace_all(tweets, "RT ", "RT")
+
+
+``` {r}
+# saving as tweets_d for duple
+# Delete all question marks (use escape characters), periods, !
+tweets <- str_replace_all(tweets, "\\?", "")
+tweets <- str_replace_all(tweets, "\\.", " ")
+tweets <- str_replace_all(tweets, "\\!", "")
+
+# Delete all -
+tweets <- str_replace_all(tweets, "\\-", "")
+tweets <- str_replace_all(tweets, "\\,", "")
+
+# There was a # nonmen that should be #nonmen
+tweets <- str_replace_all(tweets, "\\# ", "\\#")
+
+# remove ()
+tweets <- str_replace_all(tweets, "\\(", "")
+tweets <- str_replace_all(tweets, "\\)", "")
+
+#remove " & / & \
+tweets <- str_replace_all(tweets, "\\\\", "")
+tweets <- str_replace_all(tweets, "\\/", " ")
+tweets <- str_replace_all(tweets, "\\&", " ")
+```
+
+After we look at tweets, we see we need to clean up redundant spaces once again.
+
+``` {r}
+# Replace multiple spaces with one space
+# s+ means 1 or more spaces.  \\ are escape characters
+tweets <- str_replace_all(tweets, "\\s+", " ")
 ```
 
 
@@ -174,38 +215,6 @@ tweets <- str_replace_all(tweets, stopwords_regex, '')
 ```
 
 
-If we were looking at word/sentence relationships, we may have wanted to keep periods and question marks first to define sentences before breaking up into words. 
-
-``` {r}
-# saving as tweets_d for duple
-# Delete all question marks (use escape characters)
-tweets <- str_replace_all(tweets, "\\?", "")
-
-# Delete all periods
-tweets <- str_replace_all(tweets, "\\.", "")
-
-# Delete all !
-tweets <- str_replace_all(tweets, "\\!", "")
-
-# There was a # nonmen that should be #nonmen
-tweets <- str_replace_all(tweets, "\\# ", "\\#")
-
-# remove ()
-tweets <- str_replace_all(tweets, "\\(", "")
-tweets <- str_replace_all(tweets, "\\)", "")
-
-#remove " & / & \
-tweets <- str_replace_all(tweets, "\\\\", "")
-tweets <- str_replace_all(tweets, "\\/", "")
-```
-
-After we look at tweets, we see we need to clean up redundant spaces once again.
-
-``` {r}
-# Replace multiple spaces with one space
-# s+ means 1 or more spaces.  \\ are escape characters
-tweets <- str_replace_all(tweets, "\\s+", " ")
-```
 
 How does this look so far?  Peek inside tweets.
 
@@ -220,20 +229,15 @@ We now have one list of words in a 1x1 matrix. We need to convert that to a vect
 tweets_ls<- str_split(tweets, " ")
 ```
 
-I recommend viewing 'tweets_ls' to get a sense of how the list looks.  
+I recommend viewing 'tweets_ls' to get a sense of how the list looks. 
 
-``` {r}
-# Grab just the vector
-#tweets_vec<- tweets_ls[1]
-```
-
-Now look at `tweets_vec` again. How do you remove the "" entries? 
 
 ``` {r}
 # Grab just the vector without ""
-# First tweets_vec %in% "" finds where they do match
+# First tweets %in% "" finds where they do match
 # Then keep just the ones that don't match
-#tweets_vec<-tweets_vec[! (tweets_vec %in% "")]
+# check to see if there are any empty entries
+length(tweets[(tweets %in% "")]) != 0 #Returns false if no empty tweets
 ```
 
 ### Convert the vector of consectutive words into an edgelist
@@ -245,14 +249,22 @@ Now we have to think through this a little. Words are connected both to the one 
 ``` {r}
 # Create an empty dataframe to hold each edgelist row
 # It should have 2 columns and 1 row
-# A for-loop will overwrite this for each loop
-tweets_el<- cbind(rep(0,length(tweets_ls[[1]])), tweets_ls[[1]])
-tweets_el <- as.data.frame(tweets_el)
+el_row <- as.data.frame(matrix(ncol = 2, nrow = 1))
+tweets_el <- as.data.frame(matrix(ncol = 2, nrow = 1))
 # Specify column names
 colnames(tweets_el) <- c('tweet_id', 'word')
+colnames(el_row) <- c('tweet_id', 'word')
+
+#initialize
+itweet <- tweets_ls[[1]]
+# Grab just the vector without ""
+# First itweet %in% "" finds where they do match
+# Then keep just the ones that don't match
+itweet<-itweet[! (itweet %in% "")]
+tweets_el<- cbind(rep(paste("id",0),length(itweet)), itweet)
 ```
 
-As we write the for loop to create el, how many iterations will we need?
+Now loop
 
 ``` {r}
 # Write a for loop that, on each loop over the list of all words:
@@ -263,8 +275,13 @@ As we write the for loop to create el, how many iterations will we need?
 ## Binds the (re-writable) dataframe to the (now not empty) dataframe
 
 for (i in 2:(length(tweets))) {
-  el_row <- cbind(rep(i-1,length(tweets_ls[[i]])), tweets_ls[[i]])
-  colnames(el_row) <- c('tweet_id', 'word')
+  itweet <- tweets_ls[[i]]
+  # Grab just the vector without ""
+  # First itweet %in% "" finds where they do match
+  # Then keep just the ones that don't match
+  itweet<-itweet[! (itweet %in% "")]
+  el_row <- cbind(rep(paste("id",i-1),length(itweet)), itweet)
+  #colnames(el_row) <- c('tweet_id', 'word')
   tweets_el <-rbind(tweets_el, el_row)
 }
 ```
@@ -283,10 +300,21 @@ Now that we have our edgelist, we can create our graph object!!!
 Should this be directed or undirected?
 ``` {r}
 # Create a network graph object
-tweets.g <- graph_from_edgelist(tweets_el_mat, directed =TRUE)
+tweets.g <- graph_from_edgelist(tweets_el_mat, directed = FALSE)
 # use summary to check it out
 summary(tweets.g)
 ```
+```{r}
+#Try to get recognized as bipartite
+V(tweets.g)$type <- V(tweets.g)$name %in% tweets_el_mat[, 1]
+summary(tweets.g)
+```
+```{r}
+#make the biadjancency matrix
+tweet_word_freq_mat <- as_biadjacency_matrix(tweets.g)
+write.csv(tweet_word_freq_mat, file = "tweet_word_count.csv")
+```
+
 
 ## Insights
 
