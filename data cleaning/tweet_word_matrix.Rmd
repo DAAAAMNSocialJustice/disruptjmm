@@ -114,7 +114,7 @@ We will go ahead and make several substitutions and replacements. Order does mat
 tweets <- as.character(id_tweets.df$text)
 # Replace all instances of "\n" (newline) with a space - use escape characters
 # You have to add a space otherwise words will run together
-#tweets <- str_replace_all(tweets, "\\\n", " ")
+tweets <- str_replace_all(tweets, "\\\n", " ")
 ```
 
 Check to make sure there isn't anything else that needs removing, such as numbers.
@@ -123,6 +123,12 @@ Check to make sure there isn't anything else that needs removing, such as number
 #note that \rt are in there
 tweets <- str_replace_all(tweets, "RT ", "RT")
 tweets <- str_replace_all(tweets, "\\bhttp\\S*\\b\\s*", "")
+tweets <- str_replace_all(tweets, "&amp;", "")
+tweets <- str_replace_all(tweets, "p\.m", "pm")
+tweets <- str_replace_all(tweets, "&gt;", ">")
+tweets <- str_replace_all(tweets, "&lt;", "<")
+
+# Note that there was a # nonmen as a result, but that is because it is # of nonmen so # is used to indicate "umber" rather than a hashtag
 
 ```
 
@@ -132,18 +138,24 @@ Because we are going to look at 2 grams, we are going to remove all punctuation.
 
 ``` {r}
 #Replace punctuation with no space
+#[[:punct:]] This is a POSIX character class within a regular expression. It is a predefined shortcut that matches all common punctuation symbols (e.g., . , ! ? : ; " ' () [] {}).
+tweets <- str_replace_all(tweets, "[[:punct:]]", "")
 
 # Delete all quotation marks - these are left and right quotation marks
 tweets <- str_replace_all(tweets, "“", "")
 tweets <- str_replace_all(tweets, "”", "")
 tweets <- str_replace_all(tweets, "\"", "")
-tweets <- str_replace_all(tweets, "\'", "")
 tweets <- str_replace_all(tweets, "’", "")
+tweets <- str_replace_all(tweets, "|", "")
 
-# Delete all commas
-tweets <- str_replace_all(tweets, ",", "")
-tweets <- str_replace_all(tweets, ";", "")
-tweets <- str_replace_all(tweets, ":", "")
+# Delete all -
+tweets <- str_replace_all(tweets, "\\-", "")
+
+#remove " & / & \
+tweets <- str_replace_all(tweets, "\\\\", "")
+tweets <- str_replace_all(tweets, "\\/", " ")
+tweets <- str_replace_all(tweets, "\\&", " ")
+
 ```
 
 Finally, we clean up redundant spaces
@@ -153,39 +165,6 @@ Finally, we clean up redundant spaces
 tweets <- str_replace_all(tweets, "\\s+", " ")
 ```
 
-
-
-``` {r}
-# saving as tweets_d for duple
-# Delete all question marks (use escape characters), periods, !
-tweets <- str_replace_all(tweets, "\\?", "")
-tweets <- str_replace_all(tweets, "\\.", " ")
-tweets <- str_replace_all(tweets, "\\!", "")
-
-# Delete all -
-tweets <- str_replace_all(tweets, "\\-", "")
-tweets <- str_replace_all(tweets, "\\,", "")
-
-# There was a # nonmen that should be #nonmen
-tweets <- str_replace_all(tweets, "\\# ", "\\#")
-
-# remove ()
-tweets <- str_replace_all(tweets, "\\(", "")
-tweets <- str_replace_all(tweets, "\\)", "")
-
-#remove " & / & \
-tweets <- str_replace_all(tweets, "\\\\", "")
-tweets <- str_replace_all(tweets, "\\/", " ")
-tweets <- str_replace_all(tweets, "\\&", " ")
-```
-
-After we look at tweets, we see we need to clean up redundant spaces once again.
-
-``` {r}
-# Replace multiple spaces with one space
-# s+ means 1 or more spaces.  \\ are escape characters
-tweets <- str_replace_all(tweets, "\\s+", " ")
-```
 
 
 ``` {r}
