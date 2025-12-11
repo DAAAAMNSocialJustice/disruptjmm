@@ -273,7 +273,7 @@ for (i in 2:(length(tweets))) {
 Look at our edge list to make sure it is correct. What size should it be? What should the first few entries be?  
 
 ``` {r}
-write.csv(tweets_el, "tweets_el.csv", row.names = FALSE)
+write.csv(tweets_el, "tweets_el.csv")
 # Convert our edge list to the R data type matrix
 tweets_el_mat <-as.matrix(tweets_el)
 ```
