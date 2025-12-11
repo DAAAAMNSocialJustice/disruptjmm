@@ -124,7 +124,7 @@ Check to make sure there isn't anything else that needs removing, such as number
 tweets <- str_replace_all(tweets, "RT ", "RT")
 tweets <- str_replace_all(tweets, "\\bhttp\\S*\\b\\s*", "")
 tweets <- str_replace_all(tweets, "&amp;", "")
-tweets <- str_replace_all(tweets, "p\.m", "pm")
+tweets <- str_replace_all(tweets, "p\\.m", "pm")
 tweets <- str_replace_all(tweets, "&gt;", ">")
 tweets <- str_replace_all(tweets, "&lt;", "<")
 
@@ -139,7 +139,7 @@ Because we are going to look at 2 grams, we are going to remove all punctuation.
 ``` {r}
 #Replace punctuation with no space
 #[[:punct:]] This is a POSIX character class within a regular expression. It is a predefined shortcut that matches all common punctuation symbols (e.g., . , ! ? : ; " ' () [] {}).
-tweets <- str_replace_all(tweets, "[[:punct:]]", "")
+tweets <- str_replace_all(tweets, "[[:punct:]&&[^#]]", "")
 
 # Delete all quotation marks - these are left and right quotation marks
 tweets <- str_replace_all(tweets, "“", "")
@@ -166,20 +166,13 @@ tweets <- str_replace_all(tweets, "\\s+", " ")
 ```
 
 
-
-``` {r}
-# Delete spaces at the start and end of our text
-tweets<-trimws(tweets, "both")
-```
-
-
 ### Cleaning for an effective network graph
 
 We now want to make sure that our words will be recognized as the same when we construct relationships, so we have to converting everything to lowercase. Then we will use a for loop to define an edgelist.
 
 ``` {r}
 # Convert all text to lowercase
-tweets <- tolower(tweets)
+tweets <- str_to_lower(tweets)
 ```
 
 Are there any words that make sense to eliminate in our analysis?
@@ -193,6 +186,18 @@ stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
 tweets <- str_replace_all(tweets, stopwords_regex, '')
 ```
 
+we clean up redundant spaces & some hanging s
+``` {r}
+tweets <- str_replace_all(tweets, "s\\s+", " ")
+# Replace multiple spaces with one space
+# s+ means 1 or more spaces.  \\ are escape characters
+tweets <- str_replace_all(tweets, "\\s+", " ")
+```
+
+``` {r}
+# Delete spaces at the start and end of our text
+tweets<-trimws(tweets, "both")
+```
 
 
 How does this look so far?  Peek inside tweets.
@@ -239,7 +244,7 @@ itweet <- tweets_ls[[1]]
 # Grab just the vector without ""
 # First itweet %in% "" finds where they do match
 # Then keep just the ones that don't match
-itweet<-itweet[! (itweet %in% "")]
+itweet<-itweet[! (itweet %in% "")] #remove empty cells
 tweets_el<- cbind(rep(paste("id",0),length(itweet)), itweet)
 ```
 
@@ -268,6 +273,7 @@ for (i in 2:(length(tweets))) {
 Look at our edge list to make sure it is correct. What size should it be? What should the first few entries be?  
 
 ``` {r}
+write.csv(tweets_el, "tweets_el.csv")
 # Convert our edge list to the R data type matrix
 tweets_el_mat <-as.matrix(tweets_el)
 ```
