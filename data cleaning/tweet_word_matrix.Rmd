@@ -97,24 +97,8 @@ We will use pdf tools to "read in" the pdf file.
 
 ``` {r}
 # Import tweet file
-d_tweets.df <- read.csv("~/GitHub/disruptjmm/data cleaning/text of tweets.csv", row.names=1, comment.char="#")
+id_tweets.df <- read.csv("~/GitHub/disruptjmm/data cleaning/text of tweets.csv", row.names=1)
 View(id_tweets.df)
-```
-
-Now we isolate just the part of the data frame that holds MHALL.
-
-```{r}
-# Each page of pdf is one row
-# Extracting desired row(s)/page(s)
-# Mary Had a Little Lamb is on page 5
-mhall <- text_df[5,]
-```
-
-**Always a good idea to peek inside 'mhall' and make sure it did what you intended.**  
-
-``` {r}
-# Convert desired row(s)/page(s) to character string
-mhall <- as.character(mhall)
 ```
 
 ## Clean data
@@ -129,15 +113,8 @@ We will go ahead and make several substitutions and replacements. Order does mat
 ```{r}
 # Replace all instances of "\n" (newline) with a space - use escape characters
 # You have to add a space otherwise words will run together
-mhall <- str_replace_all(mhall, "\\\n", " ")
-```
-
-### Completely delete a phrase or line
-``` {r}
-# Replace all instances of the title with no space
-mhall <- str_replace_all(mhall, "Sing Out Loud Children’s Songs", "")
-# Replace all instances of the poem title with no space
-mhall <- str_replace_all(mhall, "LYRICS:  MARY HAD A LITTLE LAMB", "")
+tweets <- as.character(id_tweets.df)
+tweets <- str_replace_all(tweets, "\\\n", " ")
 ```
 
 ### Delete all punctuation
@@ -148,8 +125,8 @@ Because we are going to look at 2 grams, we are going to remove all punctuation.
 #Replace punctuation with no space
 
 # Delete all quotation marks - these are left and right quotation marks
-mhall <- str_replace_all(mhall, "“", "")
-mhall <- str_replace_all(mhall, "”", "")
+tweets <- str_replace_all(tweets, "“", "")
+tweets <- str_replace_all(tweets, "”", "")
 
 # Delete all commas
 mhall <- str_replace_all(mhall, ",", "")
